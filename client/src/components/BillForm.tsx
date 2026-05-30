@@ -58,7 +58,6 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
       billDate: new Date().toISOString().slice(0, 10),
       notes: '',
       inventoryDeviceId: null,
-      inventoryDeviceIds: [],
       ...newBillDefaults(),
       ...initialValues,
       inventoryDeviceIds: initialDeviceIds,
