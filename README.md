@@ -1,6 +1,6 @@
-# Customer Admin Dashboard
+# DRG Power Admin
 
-Internal admin tool for managing customers and debit/credit transactions.
+Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — manage customers, debit/credit transactions, and print **VLTD tax invoices** (same layout as your company bill / Tally invoice).
 
 ## Prerequisites
 

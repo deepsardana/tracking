@@ -1,8 +1,8 @@
 import { Bill, BillCompany } from '../api/bills';
 import { billDownloadName, renderVltdInvoiceHtml } from './vltdInvoiceTemplate';
 
-export function saveBill(bill: Bill, gstPercent: number, company?: BillCompany) {
-  const html = renderVltdInvoiceHtml({ bill, gstPercent, company });
+export function saveBill(bill: Bill, gstPercent: number, company?: BillCompany, hsn?: string) {
+  const html = renderVltdInvoiceHtml({ bill, gstPercent, company, hsn });
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -12,13 +12,13 @@ export function saveBill(bill: Bill, gstPercent: number, company?: BillCompany) 
   URL.revokeObjectURL(url);
 }
 
-export function printBill(bill: Bill, gstPercent: number, company?: BillCompany) {
+export function printBill(bill: Bill, gstPercent: number, company?: BillCompany, hsn?: string) {
   const win = window.open('', '_blank', 'width=820,height=1100');
   if (!win) {
     alert('Please allow pop-ups to print the bill.');
     return;
   }
-  win.document.write(renderVltdInvoiceHtml({ bill, gstPercent, company }));
+  win.document.write(renderVltdInvoiceHtml({ bill, gstPercent, company, hsn }));
   win.document.close();
   win.focus();
   const doPrint = () => win.print();

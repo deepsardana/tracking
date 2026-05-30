@@ -69,7 +69,11 @@ model BillItem {
   billId      String
   bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
   description String
+  hsn         String  @default("85269190") @db.VarChar(12)
   quantity    Decimal @db.Decimal(10, 2)
+  per         String  @default("PCS") @db.VarChar(10)
   unitPrice   Decimal @db.Decimal(10, 2)
+  rateInclTax Decimal @db.Decimal(10, 2)
+  discPercent Decimal @default(0) @db.Decimal(5, 2)
   amount      Decimal @db.Decimal(10, 2)
 }

@@ -3,7 +3,18 @@ import { Plus, Trash2, FileText } from 'lucide-react';
 import { useCustomers } from '../api/customers';
 import { useBillConfig } from '../api/bills';
 import { calculateBillTotals } from '../lib/billing';
-import { DEFAULT_VLTD_BILL, newBillDefaults } from '../lib/billTemplate';
+import { DEFAULT_LINE_ITEM, newBillDefaults } from '../lib/billTemplate';
+import { DRG_APP } from '../lib/company';
+
+export interface BillLineFormValues {
+  description: string;
+  hsn: string;
+  quantity: number;
+  per: string;
+  unitPrice: number;
+  rateInclTax: number;
+  discPercent: number;
+}
 
 export interface BillFormValues {
   customerId: string;
@@ -13,7 +24,7 @@ export interface BillFormValues {
   vltdSerialNo: string;
   vltdImeiNo: string;
   notes?: string;
-  items: { description: string; quantity: number; unitPrice: number }[];
+  items: BillLineFormValues[];
 }
 
 interface BillFormProps {
@@ -21,8 +32,6 @@ interface BillFormProps {
   onSubmit: (values: BillFormValues) => Promise<void> | void;
   submitLabel?: string;
 }
-
-const defaultItem = { description: '', quantity: 1, unitPrice: 0 };
 
 export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
   const { data: customers } = useCustomers();
@@ -44,8 +53,12 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
   const totals = calculateBillTotals(
     watchedItems.map((row) => ({
       description: row?.description ?? '',
+      hsn: row?.hsn ?? '85269190',
       quantity: Number(row?.quantity) || 0,
+      per: row?.per ?? 'PCS',
       unitPrice: Number(row?.unitPrice) || 0,
+      rateInclTax: Number(row?.rateInclTax) || 0,
+      discPercent: Number(row?.discPercent) || 0,
     })),
     gstPercent,
   );
@@ -60,23 +73,16 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           items: config.defaultBill.items,
         }
       : newBillDefaults();
-    reset((current) => ({
-      ...current,
-      ...defaults,
-    }));
+    reset((current) => ({ ...current, ...defaults }));
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3">
+      <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3 gap-2">
         <p className="text-sm text-blue-900">
-          VLTD bill template (same as HR73B5666). Change invoice no, serial &amp; IMEI per customer.
+          {DRG_APP.shortName} tax invoice — same as your company bill. Edit line items below; change invoice no, vehicle, serial &amp; IMEI as needed.
         </p>
-        <button
-          type="button"
-          onClick={applyDefaultTemplate}
-          className="flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 font-medium shrink-0"
-        >
+        <button type="button" onClick={applyDefaultTemplate} className="flex items-center gap-1 text-sm text-blue-700 font-medium shrink-0">
           <FileText size={14} />
           Reset template
         </button>
@@ -84,11 +90,8 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
 
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Customer</label>
-          <select
-            {...register('customerId', { required: true })}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-          >
+          <label className="block text-sm font-medium text-gray-700">Customer (records only)</label>
+          <select {...register('customerId', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2">
             <option value="">Select customer</option>
             {customers?.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -97,72 +100,49 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Invoice No</label>
-          <input
-            {...register('invoiceNo', { required: true, maxLength: 40 })}
-            maxLength={40}
-            className="w-full border border-gray-300 rounded px-3 py-2 font-mono"
-            placeholder={DEFAULT_VLTD_BILL.invoiceNo}
-          />
+          <input {...register('invoiceNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono" placeholder="DRG/024/26-27" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Bill Date</label>
-          <input
-            type="date"
-            {...register('billDate', { required: true })}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-          />
+          <label className="block text-sm font-medium text-gray-700">Dated</label>
+          <input type="date" {...register('billDate', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Vehicle Reg No</label>
-          <input
-            {...register('vehicleId', { required: true, maxLength: 30 })}
-            maxLength={30}
-            className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase"
-            placeholder="HR73B5666"
-          />
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Consignee / Buyer (Vehicle Reg No on bill)</label>
+          <input {...register('vehicleId', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase" placeholder="HR73B5666" />
+          <p className="text-xs text-gray-500 mt-1">State on bill: Haryana, Code : 06</p>
         </div>
-        <div />
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">VLTD Serial No</label>
-          <input
-            {...register('vltdSerialNo', { required: true, maxLength: 40 })}
-            maxLength={40}
-            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
-            placeholder="DRG1T1A042600000091"
-          />
+          <input {...register('vltdSerialNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">VLTD IMEI No</label>
-          <input
-            {...register('vltdImeiNo', { required: true, maxLength: 20 })}
-            maxLength={20}
-            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
-            placeholder="865820071384080"
-          />
+          <input {...register('vltdImeiNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
         </div>
       </div>
 
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-sm font-medium text-gray-700">Line Items (edit rates as needed)</label>
-          <button
-            type="button"
-            onClick={() => append({ ...defaultItem })}
-            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-          >
+          <label className="text-sm font-medium text-gray-700">Goods table (same columns as printed bill)</label>
+          <button type="button" onClick={() => append({ ...DEFAULT_LINE_ITEM })} className="flex items-center gap-1 text-sm text-blue-600">
             <Plus size={14} />
-            Add item
+            Add row
           </button>
         </div>
-        <div className="border border-gray-200 rounded overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="border border-gray-200 rounded overflow-x-auto">
+          <table className="w-full text-xs min-w-[900px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-2 font-medium">Description</th>
-                <th className="text-right p-2 font-medium w-20">Qty</th>
-                <th className="text-right p-2 font-medium w-28">Rate (₹)</th>
-                <th className="text-right p-2 font-medium w-24">Amount</th>
-                <th className="w-10" />
+                <th className="p-2 text-center w-8">Sl</th>
+                <th className="p-2 text-left min-w-[140px]">Description of Goods</th>
+                <th className="p-2 w-24">HSN/SAC</th>
+                <th className="p-2 w-14">Qty</th>
+                <th className="p-2 w-24">Rate (Incl. Tax)</th>
+                <th className="p-2 w-24">Rate</th>
+                <th className="p-2 w-14">per</th>
+                <th className="p-2 w-14">Disc %</th>
+                <th className="p-2 w-24">Amount</th>
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -170,41 +150,32 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
                 const line = totals.lines[index];
                 return (
                   <tr key={field.id} className="border-t border-gray-100">
-                    <td className="p-2">
-                      <input
-                        {...register(`items.${index}.description`, { required: true })}
-                        className="w-full border border-gray-300 rounded px-2 py-1"
-                      />
+                    <td className="p-1 text-center text-gray-600">{index + 1}</td>
+                    <td className="p-1">
+                      <input {...register(`items.${index}.description`, { required: true })} className="w-full border border-gray-300 rounded px-1 py-1" />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        {...register(`items.${index}.quantity`, { required: true, valueAsNumber: true })}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-right"
-                      />
+                    <td className="p-1">
+                      <input {...register(`items.${index}.hsn`)} className="w-full border border-gray-300 rounded px-1 py-1 font-mono" />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        {...register(`items.${index}.unitPrice`, { required: true, valueAsNumber: true })}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-right"
-                      />
+                    <td className="p-1">
+                      <input type="number" step="0.01" min="0" {...register(`items.${index}.quantity`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
                     </td>
-                    <td className="p-2 text-right text-gray-700">
-                      ₹{line?.amount.toFixed(2) ?? '0.00'}
+                    <td className="p-1">
+                      <input type="number" step="0.01" min="0" {...register(`items.${index}.rateInclTax`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
                     </td>
-                    <td className="p-2">
+                    <td className="p-1">
+                      <input type="number" step="0.01" min="0" {...register(`items.${index}.unitPrice`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
+                    </td>
+                    <td className="p-1">
+                      <input {...register(`items.${index}.per`)} className="w-full border border-gray-300 rounded px-1 py-1 text-center" />
+                    </td>
+                    <td className="p-1">
+                      <input type="number" step="0.01" min="0" {...register(`items.${index}.discPercent`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
+                    </td>
+                    <td className="p-1 text-right font-medium">₹{line?.amount.toFixed(2) ?? '0.00'}</td>
+                    <td className="p-1">
                       {fields.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="p-1 text-gray-400 hover:text-red-600"
-                          title="Remove item"
-                        >
+                        <button type="button" onClick={() => remove(index)} className="text-gray-400 hover:text-red-600">
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -218,34 +189,17 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
       </div>
 
       <div className="bg-gray-50 rounded p-3 space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Subtotal</span>
-          <span>₹{totals.subtotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">GST ({gstPercent}% — fixed)</span>
-          <span>₹{totals.gstAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between font-semibold text-base border-t border-gray-200 pt-2 mt-2">
-          <span>Total</span>
-          <span>₹{totals.totalAmount.toFixed(2)}</span>
-        </div>
+        <div className="flex justify-between"><span>Taxable (Amount)</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span>GST ({gstPercent}%)</span><span>₹{totals.gstAmount.toFixed(2)}</span></div>
+        <div className="flex justify-between font-semibold border-t pt-2"><span>Grand Total</span><span>₹{totals.totalAmount.toFixed(2)}</span></div>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Remarks</label>
-        <textarea
-          {...register('notes')}
-          rows={2}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+        <textarea {...register('notes')} rows={2} className="w-full border border-gray-300 rounded px-3 py-2" />
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-      >
+      <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
         {isSubmitting ? 'Saving...' : submitLabel}
       </button>
     </form>

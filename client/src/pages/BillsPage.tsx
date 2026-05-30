@@ -20,12 +20,14 @@ function BillDetail({
   bill,
   gstPercent,
   company,
+  hsn,
   onPrint,
   onSave,
 }: {
   bill: Bill;
   gstPercent: number;
   company?: BillCompany;
+  hsn?: string;
   onPrint: () => void;
   onSave: () => void;
 }) {
@@ -49,17 +51,17 @@ function BillDetail({
           Save
         </button>
       </div>
-      <BillDocument bill={bill} gstPercent={gstPercent} company={company} />
+      <BillDocument bill={bill} gstPercent={gstPercent} company={company} hsn={hsn} />
     </div>
   );
 }
 
-function handlePrintBill(bill: Bill, gstPercent: number, company?: BillCompany) {
-  printBill(bill, gstPercent, company);
+function handlePrintBill(bill: Bill, gstPercent: number, company?: BillCompany, hsn?: string) {
+  printBill(bill, gstPercent, company, hsn);
 }
 
-function handleSaveBill(bill: Bill, gstPercent: number, company?: BillCompany) {
-  saveBill(bill, gstPercent, company);
+function handleSaveBill(bill: Bill, gstPercent: number, company?: BillCompany, hsn?: string) {
+  saveBill(bill, gstPercent, company, hsn);
 }
 
 export function BillsPage() {
@@ -116,15 +118,19 @@ export function BillsPage() {
     notes: bill.notes ?? '',
     items: bill.items.map((item) => ({
       description: item.description,
+      hsn: item.hsn ?? config?.defaultHsn ?? '85269190',
       quantity: Number(item.quantity),
+      per: item.per ?? 'PCS',
       unitPrice: Number(item.unitPrice),
+      rateInclTax: Number(item.rateInclTax ?? item.unitPrice),
+      discPercent: Number(item.discPercent ?? 0),
     })),
   });
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-2">
-        <h1 className="text-2xl font-bold text-gray-800">Bills</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Tax Invoices</h1>
         <button
           onClick={() => setCreateOpen(true)}
           className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -134,7 +140,7 @@ export function BillsPage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">
-        VLTD tax invoice (HR73B5666 template). GST fixed at {gstPercent}%. Edit invoice no, serial no &amp; IMEI per bill.
+        Your official DRG Power tax invoice — same layout as your printed bill. GST {gstPercent}% fixed. Change invoice no, vehicle reg, VLTD serial/IMEI, and line items; print or save when ready.
       </p>
 
       <div className="bg-white rounded shadow border border-gray-200 p-4 mb-4 grid grid-cols-3 gap-3">
@@ -208,7 +214,7 @@ export function BillsPage() {
                   <td className="p-3">
                     <div className="flex justify-center gap-1">
                       <button
-                        onClick={() => handlePrintBill(bill, gstPercent, config?.company)}
+                        onClick={() => handlePrintBill(bill, gstPercent, config?.company, config?.defaultHsn)}
                         title="Print bill"
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-gray-600 border border-gray-300 hover:bg-gray-50"
                       >
@@ -216,7 +222,7 @@ export function BillsPage() {
                         Print
                       </button>
                       <button
-                        onClick={() => handleSaveBill(bill, gstPercent, config?.company)}
+                        onClick={() => handleSaveBill(bill, gstPercent, config?.company, config?.defaultHsn)}
                         title="Save bill as file"
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-50"
                       >
@@ -283,8 +289,9 @@ export function BillsPage() {
             bill={viewing}
             gstPercent={gstPercent}
             company={config?.company}
-            onPrint={() => handlePrintBill(viewing, gstPercent, config?.company)}
-            onSave={() => handleSaveBill(viewing, gstPercent, config?.company)}
+            hsn={config?.defaultHsn}
+            onPrint={() => handlePrintBill(viewing, gstPercent, config?.company, config?.defaultHsn)}
+            onSave={() => handleSaveBill(viewing, gstPercent, config?.company, config?.defaultHsn)}
           />
         )}
       </Modal>

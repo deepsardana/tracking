@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
+import { DRG_APP, DRG_BILL_COMPANY } from '../lib/company';
 
 interface LoginFormValues {
   email: string;
@@ -25,9 +26,15 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded shadow w-96 space-y-4">
-        <h1 className="text-xl font-bold text-gray-800">Login</h1>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-lg shadow-md w-full max-w-md space-y-4 border border-gray-200">
+        <div className="text-center border-b border-gray-100 pb-4 mb-2">
+          <h1 className="text-xl font-bold text-gray-900">{DRG_APP.shortName}</h1>
+          <p className="text-sm text-gray-600 mt-1">{DRG_APP.legalName}</p>
+          <p className="text-xs text-gray-500 mt-2">{DRG_APP.tagline}</p>
+          <p className="text-xs text-gray-400 mt-1">GSTIN {DRG_BILL_COMPANY.gstin}</p>
+        </div>
+        <h2 className="text-sm font-semibold text-gray-700">Staff login</h2>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <input
           {...register('email', { required: true })}

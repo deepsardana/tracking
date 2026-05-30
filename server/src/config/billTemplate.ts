@@ -1,27 +1,42 @@
-/** Default VLTD tax invoice layout (matches HR73B5666-style bills). */
+import { DEFAULT_DEVICE_INCL, DEFAULT_DEVICE_TAXABLE } from './billing';
+
+/** DRG POWER TECHNOLOGY — matches HR73B5666.pdf */
 export const BILL_COMPANY = {
-  name: process.env.BILL_COMPANY_NAME ?? 'GPS Tracking Solutions',
-  address: process.env.BILL_COMPANY_ADDRESS ?? 'Haryana, India',
-  phone: process.env.BILL_COMPANY_PHONE ?? '',
-  gstin: process.env.BILL_COMPANY_GSTIN ?? '',
+  name: process.env.BILL_COMPANY_NAME ?? 'DRG POWER TECHNOLOGY PVT. LTD. (2025-26)',
+  addressLine1: process.env.BILL_COMPANY_ADDRESS_LINE1 ?? 'HNO-33R GROUND FLOOR NEW COLONY',
+  addressLine2: process.env.BILL_COMPANY_ADDRESS_LINE2 ?? 'NEAR GURDWARA, GURGAON',
+  phone: process.env.BILL_COMPANY_PHONE ?? 'TEL- 0124-4146966, MOB-9811133188',
+  gstin: process.env.BILL_COMPANY_GSTIN ?? '06AAICD8552H2ZF',
+  stateName: process.env.BILL_COMPANY_STATE ?? 'Haryana',
+  stateCode: process.env.BILL_COMPANY_STATE_CODE ?? '06',
+  cin: process.env.BILL_COMPANY_CIN ?? 'U51909HR2021PTC098799',
+  email: process.env.BILL_COMPANY_EMAIL ?? 'DRGPOWER712@GMAIL.COM',
+  pan: process.env.BILL_COMPANY_PAN ?? 'AAICD8552H',
 };
 
+export const DEFAULT_HSN = '85269190';
+
 export const DEFAULT_VLTD_BILL = {
-  invoiceNo: 'HR73B5666',
+  invoiceNo: 'DRG/024/26-27',
   vehicleId: 'HR73B5666',
   vltdSerialNo: 'DRG1T1A042600000091',
   vltdImeiNo: '865820071384080',
   items: [
-    { description: 'VLTD Device Supply', quantity: 1, unitPrice: 0 },
-    { description: 'Installation & Activation', quantity: 1, unitPrice: 0 },
-    { description: 'Annual Subscription / SIM', quantity: 1, unitPrice: 0 },
+    {
+      description: 'AIS 140 DEVICE 2G',
+      hsn: DEFAULT_HSN,
+      quantity: 1,
+      per: 'PCS',
+      unitPrice: DEFAULT_DEVICE_TAXABLE,
+      rateInclTax: DEFAULT_DEVICE_INCL,
+      discPercent: 0,
+    },
   ],
 };
 
 export function suggestInvoiceNo() {
   const d = new Date();
-  const y = d.getFullYear();
+  const y = String(d.getFullYear()).slice(-2);
   const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `INV/${y}${m}${day}`;
+  return `DRG/${m}/${y}-27`;
 }

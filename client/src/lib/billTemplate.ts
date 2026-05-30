@@ -1,25 +1,31 @@
-import { BillFormValues } from '../components/BillForm';
+import { BillFormValues, BillLineFormValues } from '../components/BillForm';
 
-/** Default bill matching HR73B5666-style VLTD invoice — user edits serial, IMEI, invoice no per bill. */
+export const DEFAULT_DEVICE_TAXABLE = 3813.56;
+export const DEFAULT_DEVICE_INCL = 4500;
+
+export const DEFAULT_LINE_ITEM: BillLineFormValues = {
+  description: 'AIS 140 DEVICE 2G',
+  hsn: '85269190',
+  quantity: 1,
+  per: 'PCS',
+  unitPrice: DEFAULT_DEVICE_TAXABLE,
+  rateInclTax: DEFAULT_DEVICE_INCL,
+  discPercent: 0,
+};
+
 export const DEFAULT_VLTD_BILL: Partial<BillFormValues> = {
-  invoiceNo: 'HR73B5666',
+  invoiceNo: 'DRG/024/26-27',
   vehicleId: 'HR73B5666',
   vltdSerialNo: 'DRG1T1A042600000091',
   vltdImeiNo: '865820071384080',
-  items: [
-    { description: 'VLTD Device Supply', quantity: 1, unitPrice: 0 },
-    { description: 'Installation & Activation', quantity: 1, unitPrice: 0 },
-    { description: 'Annual Subscription / SIM', quantity: 1, unitPrice: 0 },
-  ],
+  items: [{ ...DEFAULT_LINE_ITEM }],
 };
 
 export function suggestInvoiceNo() {
   const d = new Date();
-  const y = d.getFullYear();
+  const y = String(d.getFullYear()).slice(-2);
   const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const seq = String(Date.now()).slice(-4);
-  return `INV/${y}${m}${day}/${seq}`;
+  return `DRG/${m}/${y}-27`;
 }
 
 export function newBillDefaults(): Partial<BillFormValues> {
@@ -27,5 +33,6 @@ export function newBillDefaults(): Partial<BillFormValues> {
     ...DEFAULT_VLTD_BILL,
     invoiceNo: suggestInvoiceNo(),
     billDate: new Date().toISOString().slice(0, 10),
+    items: [{ ...DEFAULT_LINE_ITEM }],
   };
 }

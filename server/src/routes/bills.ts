@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../db';
 import { calculateBillTotals, FIXED_GST_PERCENT } from '../config/billing';
-import { BILL_COMPANY, DEFAULT_VLTD_BILL, suggestInvoiceNo } from '../config/billTemplate';
+import {
+  BILL_COMPANY,
+  DEFAULT_HSN,
+  DEFAULT_VLTD_BILL,
+  suggestInvoiceNo,
+} from '../config/billTemplate';
 
 const router = Router();
 
@@ -9,6 +14,7 @@ router.get('/config', (_req, res) => {
   res.json({
     gstPercent: FIXED_GST_PERCENT,
     company: BILL_COMPANY,
+    defaultHsn: DEFAULT_HSN,
     defaultBill: {
       ...DEFAULT_VLTD_BILL,
       invoiceNo: suggestInvoiceNo(),
@@ -83,8 +89,8 @@ router.post('/', async (req, res) => {
   }
 
   for (const item of items) {
-    if (!item.description?.trim() || item.quantity == null || item.unitPrice == null) {
-      return res.status(400).json({ error: 'Each item needs description, quantity, and unit price' });
+    if (!item.description?.trim() || item.quantity == null) {
+      return res.status(400).json({ error: 'Each item needs description and quantity' });
     }
   }
 
@@ -106,8 +112,12 @@ router.post('/', async (req, res) => {
       items: {
         create: lineItems.map((row) => ({
           description: row.description,
+          hsn: row.hsn,
           quantity: row.quantity,
+          per: row.per,
           unitPrice: row.unitPrice,
+          rateInclTax: row.rateInclTax,
+          discPercent: row.discPercent,
           amount: row.amount,
         })),
       },
@@ -141,6 +151,12 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invoice / vehicle / serial / IMEI exceeds max length' });
   }
 
+  for (const item of items) {
+    if (!item.description?.trim() || item.quantity == null) {
+      return res.status(400).json({ error: 'Each item needs description and quantity' });
+    }
+  }
+
   const { lineItems, subtotal, gstAmount, totalAmount } = calculateBillTotals(items);
 
   try {
@@ -163,8 +179,12 @@ router.put('/:id', async (req, res) => {
           items: {
             create: lineItems.map((row) => ({
               description: row.description,
+              hsn: row.hsn,
               quantity: row.quantity,
+              per: row.per,
               unitPrice: row.unitPrice,
+              rateInclTax: row.rateInclTax,
+              discPercent: row.discPercent,
               amount: row.amount,
             })),
           },

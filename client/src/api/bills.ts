@@ -4,16 +4,26 @@ import { api } from './axios';
 export interface BillItem {
   id: string;
   description: string;
+  hsn: string;
   quantity: string;
+  per: string;
   unitPrice: string;
+  rateInclTax: string;
+  discPercent: string;
   amount: string;
 }
 
 export interface BillCompany {
   name: string;
-  address: string;
+  addressLine1: string;
+  addressLine2: string;
   phone: string;
   gstin: string;
+  stateName: string;
+  stateCode: string;
+  cin: string;
+  email: string;
+  pan: string;
 }
 
 export interface Bill {
@@ -43,8 +53,12 @@ export interface BillFilters {
 
 export interface BillItemInput {
   description: string;
+  hsn: string;
   quantity: number;
+  per: string;
   unitPrice: number;
+  rateInclTax: number;
+  discPercent: number;
 }
 
 export interface BillInput {
@@ -68,6 +82,7 @@ export interface BillConfig {
     vltdImeiNo: string;
     items: BillItemInput[];
   };
+  defaultHsn: string;
 }
 
 export function useBillConfig() {
