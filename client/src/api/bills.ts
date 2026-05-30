@@ -32,9 +32,9 @@ export interface Bill {
   customer: { id: string; name: string; phone: string };
   billDate: string;
   invoiceNo: string;
-  vehicleId: string;
-  vltdSerialNo: string;
-  vltdImeiNo: string;
+  vehicleId?: string;
+  vltdSerialNo?: string;
+  vltdImeiNo?: string;
   inventoryDeviceId?: string | null;
   deviceId: string;
   subtotal: string;
@@ -67,9 +67,9 @@ export interface BillInput {
   customerId: string;
   billDate: string;
   invoiceNo: string;
-  vehicleId: string;
-  vltdSerialNo: string;
-  vltdImeiNo: string;
+  vehicleId?: string;
+  vltdSerialNo?: string;
+  vltdImeiNo?: string;
   inventoryDeviceId?: string | null;
   notes?: string;
   items: BillItemInput[];
@@ -80,7 +80,7 @@ export interface BillConfig {
   company: BillCompany;
   defaultBill: {
     invoiceNo: string;
-    vehicleId: string;
+    vehicleId?: string;
     vltdSerialNo: string;
     vltdImeiNo: string;
     items: BillItemInput[];

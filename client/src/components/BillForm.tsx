@@ -3,7 +3,7 @@ import { Plus, Trash2, FileText } from 'lucide-react';
 import { useCustomers } from '../api/customers';
 import { useBillConfig } from '../api/bills';
 import { useAvailableDevices } from '../api/inventory';
-import { calculateBillTotals } from '../lib/billing';
+import { calculateBillTotals, roundMoney } from '../lib/billing';
 import { DEFAULT_LINE_ITEM, newBillDefaults } from '../lib/billTemplate';
 import { HK_APP } from '../lib/company';
 
@@ -107,6 +107,22 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
     setValue('vltdImeiNo', device.imeiNo);
   };
 
+  const syncLineFromIncl = (index: number, value: number) => {
+    const incl = Number(value) || 0;
+    setValue(`items.${index}.rateInclTax`, incl);
+    if (incl > 0) {
+      setValue(`items.${index}.unitPrice`, roundMoney(incl / (1 + gstPercent / 100)));
+    }
+  };
+
+  const syncLineFromTaxable = (index: number, value: number) => {
+    const taxable = Number(value) || 0;
+    setValue(`items.${index}.unitPrice`, taxable);
+    if (taxable > 0) {
+      setValue(`items.${index}.rateInclTax`, roundMoney(taxable * (1 + gstPercent / 100)));
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3 gap-2">
@@ -158,17 +174,20 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           <input type="hidden" {...register('inventoryDeviceId')} />
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Consignee / Buyer (Vehicle Reg No on bill)</label>
-          <input {...register('vehicleId', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase" placeholder="HR73B5666" />
-          <p className="text-xs text-gray-500 mt-1">State on bill: Haryana, Code : 06</p>
+          <label className="block text-sm font-medium text-gray-700">
+            Consignee / Buyer (Vehicle Reg No on bill) <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input {...register('vehicleId')} className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase" placeholder="e.g. HR73B5666 — leave blank to skip" />
+          <p className="text-xs text-gray-500 mt-1">If filled, shows on bill with State Haryana, Code : 06</p>
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">VLTD Serial No</label>
-          <input {...register('vltdSerialNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
+          <label className="block text-sm font-medium text-gray-700">VLTD Serial No <span className="text-gray-400 font-normal">(optional)</span></label>
+          <input {...register('vltdSerialNo')} placeholder="Leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">VLTD IMEI No</label>
-          <input {...register('vltdImeiNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
+          <label className="block text-sm font-medium text-gray-700">VLTD IMEI No <span className="text-gray-400 font-normal">(optional)</span></label>
+          <input {...register('vltdImeiNo')} placeholder="Leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
+          <p className="text-xs text-gray-500 mt-1">Pick from inventory to auto-fill, or leave empty — bill prints without serial/IMEI lines.</p>
         </div>
       </div>
 
@@ -212,10 +231,26 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
                       <input type="number" step="0.01" min="0" {...register(`items.${index}.quantity`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
                     </td>
                     <td className="p-1">
-                      <input type="number" step="0.01" min="0" {...register(`items.${index}.rateInclTax`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...register(`items.${index}.rateInclTax`, {
+                          valueAsNumber: true,
+                          onChange: (e) => syncLineFromIncl(index, Number(e.target.value)),
+                        })}
+                        className="w-full border border-gray-300 rounded px-1 py-1 text-right"
+                      />
                     </td>
                     <td className="p-1">
-                      <input type="number" step="0.01" min="0" {...register(`items.${index}.unitPrice`, { valueAsNumber: true })} className="w-full border border-gray-300 rounded px-1 py-1 text-right" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={line?.unitPrice ?? watchedItems[index]?.unitPrice ?? ''}
+                        onChange={(e) => syncLineFromTaxable(index, Number(e.target.value))}
+                        className="w-full border border-gray-300 rounded px-1 py-1 text-right"
+                      />
                     </td>
                     <td className="p-1">
                       <input {...register(`items.${index}.per`)} className="w-full border border-gray-300 rounded px-1 py-1 text-center" />

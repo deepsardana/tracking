@@ -208,7 +208,7 @@ export function BillsPage() {
                     <div>{bill.vltdSerialNo ?? bill.deviceId}</div>
                     <div className="text-gray-500">{bill.vltdImeiNo ?? ''}</div>
                   </td>
-                  <td className="p-3">{bill.vehicleId}</td>
+                  <td className="p-3">{bill.vehicleId?.trim() || '—'}</td>
                   <td className="p-3 text-right">₹{Number(bill.subtotal).toFixed(2)}</td>
                   <td className="p-3 text-right text-gray-600">₹{Number(bill.gstAmount).toFixed(2)}</td>
                   <td className="p-3 text-right font-medium">₹{Number(bill.totalAmount).toFixed(2)}</td>

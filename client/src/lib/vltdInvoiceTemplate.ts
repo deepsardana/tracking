@@ -182,12 +182,33 @@ function companyExtraLines(company: BillCompany) {
 }
 
 function partyCell(title: string, buyer: string, stateName: string, stateCode: string) {
+  const buyerLine = buyer.trim()
+    ? `<span class="val">${escapeHtml(buyer)}</span><br/>
+      <span class="state">State Name &nbsp;: &nbsp;${escapeHtml(stateName)}, Code : ${escapeHtml(stateCode)}</span>`
+    : '&nbsp;';
   return `
     <td width="50%">
       <span class="lbl">${title}</span><br/>
-      <span class="val">${escapeHtml(buyer)}</span><br/>
-      <span class="state">State Name &nbsp;: &nbsp;${escapeHtml(stateName)}, Code : ${escapeHtml(stateCode)}</span>
+      ${buyerLine}
     </td>`;
+}
+
+function vltdSubRows(serial: string, imei: string) {
+  const blocks: { label: string; value: string }[] = [];
+  if (serial.trim()) blocks.push({ label: 'VLTD Serial No:', value: serial.trim() });
+  if (imei.trim()) blocks.push({ label: 'VLTD IMEI No:', value: imei.trim() });
+  if (blocks.length === 0) return '';
+
+  return blocks
+    .map((block, index) => {
+      const last = index === blocks.length - 1;
+      return `
+      <tr class="sub${last ? ' sub-last' : ''}">
+        <td class="sl"></td>
+        <td class="desc" colspan="8"><strong>${block.label}</strong> &nbsp; ${escapeHtml(block.value)}</td>
+      </tr>`;
+    })
+    .join('');
 }
 
 function renderItemRows(
@@ -225,19 +246,7 @@ function renderItemRows(
       const disc =
         item.discPercent && Number(item.discPercent) > 0 ? money(item.discPercent) : '&nbsp;';
       const qty = `${Number(item.quantity)} ${escapeHtml(per)}`;
-
-      const vltdRows =
-        idx === 0
-          ? `
-      <tr class="sub">
-        <td class="sl"></td>
-        <td class="desc" colspan="8"><strong>VLTD Serial No:</strong> &nbsp; ${escapeHtml(serial)}</td>
-      </tr>
-      <tr class="sub sub-last">
-        <td class="sl"></td>
-        <td class="desc" colspan="8"><strong>VLTD IMEI No:</strong> &nbsp; ${escapeHtml(imei)}</td>
-      </tr>`
-          : '';
+      const vltdRows = idx === 0 ? vltdSubRows(serial, imei) : '';
 
       return `
       <tr>
@@ -274,9 +283,9 @@ export function renderVltdInvoiceHtml({
   hsn = DEFAULT_HSN,
 }: VltdInvoiceData): string {
   const invoiceNo = bill.invoiceNo ?? 'HKT/042/26-27';
-  const buyer = bill.vehicleId;
-  const serial = bill.vltdSerialNo ?? bill.deviceId;
-  const imei = bill.vltdImeiNo ?? '';
+  const buyer = (bill.vehicleId ?? '').trim();
+  const serial = (bill.vltdSerialNo ?? '').trim();
+  const imei = (bill.vltdImeiNo ?? '').trim();
   const halfGst = gstPercent / 2;
   const taxable = Number(bill.subtotal);
   const cgst = Number(bill.gstAmount) / 2;

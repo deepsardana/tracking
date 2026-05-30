@@ -15,9 +15,9 @@ export const DEFAULT_LINE_ITEM: BillLineFormValues = {
 
 export const DEFAULT_VLTD_BILL: Partial<BillFormValues> = {
   invoiceNo: 'HKT/042/26-27',
-  vehicleId: 'HR73B5666',
-  vltdSerialNo: 'DRG1T1A042600000091',
-  vltdImeiNo: '865820071384080',
+  vehicleId: '',
+  vltdSerialNo: '',
+  vltdImeiNo: '',
   items: [{ ...DEFAULT_LINE_ITEM }],
 };
 

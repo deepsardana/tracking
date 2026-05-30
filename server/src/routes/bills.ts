@@ -63,9 +63,9 @@ function parseBillBody(body: Record<string, unknown>) {
   const customerId = body.customerId as string;
   const billDate = body.billDate as string;
   const invoiceNo = (body.invoiceNo as string)?.trim();
-  const vehicleId = (body.vehicleId as string)?.trim();
-  const vltdSerialNo = (body.vltdSerialNo as string)?.trim();
-  const vltdImeiNo = (body.vltdImeiNo as string)?.trim();
+  const vehicleId = ((body.vehicleId as string) ?? '').trim();
+  const vltdSerialNo = ((body.vltdSerialNo as string) ?? '').trim();
+  const vltdImeiNo = ((body.vltdImeiNo as string) ?? '').trim();
   const inventoryDeviceId = (body.inventoryDeviceId as string | null | undefined) ?? null;
   const notes = body.notes as string | undefined;
   const items = body.items;
@@ -80,6 +80,24 @@ function parseBillBody(body: Record<string, unknown>) {
     notes,
     items,
   };
+}
+
+function billDeviceId(serial: string, vehicleId: string, invoiceNo: string) {
+  const key = serial.trim() || vehicleId.trim() || invoiceNo.trim();
+  return key.slice(0, 30) || 'NA';
+}
+
+function validateBillFields(
+  invoiceNo: string,
+  vehicleId: string,
+  vltdSerialNo: string,
+  vltdImeiNo: string,
+) {
+  if (invoiceNo.length > 40) return 'Invoice no exceeds max length';
+  if (vehicleId.length > 30) return 'Vehicle reg exceeds max length';
+  if (vltdSerialNo.length > 40) return 'VLTD serial exceeds max length';
+  if (vltdImeiNo.length > 20) return 'VLTD IMEI exceeds max length';
+  return null;
 }
 
 router.post('/', async (req, res) => {
@@ -99,17 +117,13 @@ router.post('/', async (req, res) => {
     !customerId ||
     !billDate ||
     !invoiceNo ||
-    !vehicleId ||
-    !vltdSerialNo ||
-    !vltdImeiNo ||
     !Array.isArray(items) ||
     items.length === 0
   ) {
     return res.status(400).json({ error: 'Missing required fields or items' });
   }
-  if (invoiceNo.length > 40 || vehicleId.length > 30 || vltdSerialNo.length > 40 || vltdImeiNo.length > 20) {
-    return res.status(400).json({ error: 'Invoice / vehicle / serial / IMEI exceeds max length' });
-  }
+  const fieldError = validateBillFields(invoiceNo, vehicleId, vltdSerialNo, vltdImeiNo);
+  if (fieldError) return res.status(400).json({ error: fieldError });
 
   for (const item of items) {
     if (!item.description?.trim() || item.quantity == null) {
@@ -131,7 +145,7 @@ router.post('/', async (req, res) => {
           vltdSerialNo: resolved.vltdSerialNo,
           vltdImeiNo: resolved.vltdImeiNo,
           inventoryDeviceId: resolved.inventoryDeviceId,
-          deviceId: resolved.vltdSerialNo.slice(0, 30),
+          deviceId: billDeviceId(resolved.vltdSerialNo, vehicleId, invoiceNo),
           subtotal,
           gstAmount,
           totalAmount,
@@ -183,17 +197,13 @@ router.put('/:id', async (req, res) => {
     !customerId ||
     !billDate ||
     !invoiceNo ||
-    !vehicleId ||
-    !vltdSerialNo ||
-    !vltdImeiNo ||
     !Array.isArray(items) ||
     items.length === 0
   ) {
     return res.status(400).json({ error: 'Missing required fields or items' });
   }
-  if (invoiceNo.length > 40 || vehicleId.length > 30 || vltdSerialNo.length > 40 || vltdImeiNo.length > 20) {
-    return res.status(400).json({ error: 'Invoice / vehicle / serial / IMEI exceeds max length' });
-  }
+  const fieldError = validateBillFields(invoiceNo, vehicleId, vltdSerialNo, vltdImeiNo);
+  if (fieldError) return res.status(400).json({ error: fieldError });
 
   for (const item of items) {
     if (!item.description?.trim() || item.quantity == null) {
@@ -223,7 +233,7 @@ router.put('/:id', async (req, res) => {
           vltdSerialNo: resolved.vltdSerialNo,
           vltdImeiNo: resolved.vltdImeiNo,
           inventoryDeviceId: resolved.inventoryDeviceId,
-          deviceId: resolved.vltdSerialNo.slice(0, 30),
+          deviceId: billDeviceId(resolved.vltdSerialNo, vehicleId, invoiceNo),
           subtotal,
           gstAmount,
           totalAmount,

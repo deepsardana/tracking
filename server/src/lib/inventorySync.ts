@@ -68,15 +68,16 @@ export async function resolveInventoryDevice(
     };
   }
 
-  const bySerial = await prisma.deviceInventory.findUnique({
-    where: { vltdSerialNo },
-    include: { bill: { select: { id: true } } },
-  });
-  if (bySerial) {
+  if (vltdSerialNo) {
+    const bySerial = await prisma.deviceInventory.findUnique({
+      where: { vltdSerialNo },
+      include: { bill: { select: { id: true } } },
+    });
+    if (bySerial) {
     if (bySerial.status === DeviceStatus.BILLED && bySerial.bill?.id !== billId) {
       throw new Error('Device serial already billed in inventory');
     }
-    if (bySerial.imeiNo !== vltdImeiNo) {
+    if (vltdImeiNo && bySerial.imeiNo !== vltdImeiNo) {
       throw new Error('IMEI does not match inventory record for this serial');
     }
     return {
@@ -84,7 +85,8 @@ export async function resolveInventoryDevice(
       vltdSerialNo: bySerial.vltdSerialNo,
       vltdImeiNo: bySerial.imeiNo,
     };
+    }
   }
 
-  return { inventoryDeviceId: null, vltdSerialNo, vltdImeiNo };
+  return { inventoryDeviceId: null, vltdSerialNo: vltdSerialNo.trim(), vltdImeiNo: vltdImeiNo.trim() };
 }

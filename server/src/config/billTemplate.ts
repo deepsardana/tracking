@@ -20,9 +20,9 @@ export const INVOICE_PREFIX = process.env.BILL_INVOICE_PREFIX ?? 'HKT';
 
 export const DEFAULT_VLTD_BILL = {
   invoiceNo: 'HKT/042/26-27',
-  vehicleId: 'HR73B5666',
-  vltdSerialNo: 'DRG1T1A042600000091',
-  vltdImeiNo: '865820071384080',
+  vehicleId: '',
+  vltdSerialNo: '',
+  vltdImeiNo: '',
   items: [
     {
       description: 'AIS 140 DEVICE 2G',

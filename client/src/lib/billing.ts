@@ -19,11 +19,13 @@ export function normalizeBillLine(item: BillLineDraft, gstPercent = FIXED_GST_PE
   let unitPrice = Number(item.unitPrice) || 0;
   let rateInclTax = Number(item.rateInclTax) || 0;
   const discPercent = Number(item.discPercent) || 0;
+  const factor = 1 + gstPercent / 100;
 
-  if (rateInclTax > 0 && unitPrice <= 0) {
-    unitPrice = roundMoney(rateInclTax / (1 + gstPercent / 100));
-  } else if (unitPrice > 0 && rateInclTax <= 0) {
-    rateInclTax = roundMoney(unitPrice * (1 + gstPercent / 100));
+  // Inclusive rate is the primary price — derive taxable rate from it when set.
+  if (rateInclTax > 0) {
+    unitPrice = roundMoney(rateInclTax / factor);
+  } else if (unitPrice > 0) {
+    rateInclTax = roundMoney(unitPrice * factor);
   }
 
   let amount = roundMoney(quantity * unitPrice);
@@ -31,7 +33,10 @@ export function normalizeBillLine(item: BillLineDraft, gstPercent = FIXED_GST_PE
     amount = roundMoney(amount * (1 - discPercent / 100));
   }
 
-  return { ...item, quantity, unitPrice, rateInclTax, discPercent, amount };
+  const gstAmount = roundMoney(amount * (gstPercent / 100));
+  const lineTotalIncl = roundMoney(amount + gstAmount);
+
+  return { ...item, quantity, unitPrice, rateInclTax, discPercent, amount, gstAmount, lineTotalIncl };
 }
 
 export function calculateBillTotals(items: BillLineDraft[], gstPercent = FIXED_GST_PERCENT) {
