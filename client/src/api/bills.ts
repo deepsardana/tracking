@@ -42,6 +42,7 @@ export interface Bill {
   totalAmount: string;
   notes: string | null;
   inventoryDevice?: { id: string; vltdSerialNo: string; imeiNo: string; deviceNo: string | null } | null;
+  inventoryDevices?: { id: string; vltdSerialNo: string; imeiNo: string; deviceNo: string | null }[];
   items: BillItem[];
   createdAt: string;
   updatedAt: string;
@@ -71,6 +72,7 @@ export interface BillInput {
   vltdSerialNo?: string;
   vltdImeiNo?: string;
   inventoryDeviceId?: string | null;
+  inventoryDeviceIds?: string[];
   notes?: string;
   items: BillItemInput[];
 }

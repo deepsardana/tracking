@@ -7,7 +7,7 @@ import {
   DEFAULT_VLTD_BILL,
   suggestInvoiceNo,
 } from '../config/billTemplate';
-import { assignDeviceToBill, releaseBillDevice, resolveInventoryDevice } from '../lib/inventorySync';
+import { assignDevicesToBill, releaseBillDevices, resolveInventoryDevices } from '../lib/inventorySync';
 
 const router = Router();
 
@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
       customer: { select: { id: true, name: true, phone: true } },
       items: { orderBy: { id: 'asc' } },
       inventoryDevice: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true } },
+          inventoryDevices: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true }, orderBy: { vltdSerialNo: 'asc' } },
     },
     orderBy: { billDate: 'desc' },
   });
@@ -53,6 +54,7 @@ router.get('/:id', async (req, res) => {
       customer: { select: { id: true, name: true, phone: true } },
       items: { orderBy: { id: 'asc' } },
       inventoryDevice: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true } },
+          inventoryDevices: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true }, orderBy: { vltdSerialNo: 'asc' } },
     },
   });
   if (!bill) return res.status(404).json({ error: 'Bill not found' });
@@ -67,6 +69,11 @@ function parseBillBody(body: Record<string, unknown>) {
   const vltdSerialNo = ((body.vltdSerialNo as string) ?? '').trim();
   const vltdImeiNo = ((body.vltdImeiNo as string) ?? '').trim();
   const inventoryDeviceId = (body.inventoryDeviceId as string | null | undefined) ?? null;
+  const inventoryDeviceIds = Array.isArray(body.inventoryDeviceIds)
+    ? (body.inventoryDeviceIds as unknown[]).map((id) => String(id))
+    : inventoryDeviceId
+      ? [inventoryDeviceId]
+      : [];
   const notes = body.notes as string | undefined;
   const items = body.items;
   return {
@@ -77,6 +84,7 @@ function parseBillBody(body: Record<string, unknown>) {
     vltdSerialNo,
     vltdImeiNo,
     inventoryDeviceId: inventoryDeviceId || null,
+    inventoryDeviceIds,
     notes,
     items,
   };
@@ -95,8 +103,8 @@ function validateBillFields(
 ) {
   if (invoiceNo.length > 40) return 'Invoice no exceeds max length';
   if (vehicleId.length > 500) return 'Vehicle reg list exceeds max length';
-  if (vltdSerialNo.length > 1000) return 'VLTD serial list exceeds max length';
-  if (vltdImeiNo.length > 1000) return 'VLTD IMEI list exceeds max length';
+  if (vltdSerialNo.length > 20000) return 'VLTD serial list exceeds max length';
+  if (vltdImeiNo.length > 20000) return 'VLTD IMEI list exceeds max length';
   return null;
 }
 
@@ -109,6 +117,7 @@ router.post('/', async (req, res) => {
     vltdSerialNo,
     vltdImeiNo,
     inventoryDeviceId,
+    inventoryDeviceIds,
     notes,
     items,
   } = parseBillBody(req.body);
@@ -132,7 +141,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const resolved = await resolveInventoryDevice(inventoryDeviceId, vltdSerialNo, vltdImeiNo);
+    const resolved = await resolveInventoryDevices(inventoryDeviceIds, vltdSerialNo, vltdImeiNo);
     const { lineItems, subtotal, gstAmount, totalAmount } = calculateBillTotals(items);
 
     const bill = await prisma.$transaction(async (tx) => {
@@ -167,9 +176,10 @@ router.post('/', async (req, res) => {
           customer: { select: { id: true, name: true, phone: true } },
           items: { orderBy: { id: 'asc' } },
           inventoryDevice: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true } },
+          inventoryDevices: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true }, orderBy: { vltdSerialNo: 'asc' } },
         },
       });
-      await assignDeviceToBill(tx, created.id, resolved.inventoryDeviceId);
+      await assignDevicesToBill(tx, created.id, resolved.inventoryDeviceIds);
       return created;
     });
 
@@ -189,6 +199,7 @@ router.put('/:id', async (req, res) => {
     vltdSerialNo,
     vltdImeiNo,
     inventoryDeviceId,
+    inventoryDeviceIds,
     notes,
     items,
   } = parseBillBody(req.body);
@@ -214,11 +225,11 @@ router.put('/:id', async (req, res) => {
   try {
     const existing = await prisma.bill.findUnique({
       where: { id },
-      select: { inventoryDeviceId: true },
+      select: { inventoryDeviceId: true, inventoryDevices: { select: { id: true } } },
     });
     if (!existing) return res.status(404).json({ error: 'Bill not found' });
 
-    const resolved = await resolveInventoryDevice(inventoryDeviceId, vltdSerialNo, vltdImeiNo, id);
+    const resolved = await resolveInventoryDevices(inventoryDeviceIds, vltdSerialNo, vltdImeiNo, id);
     const { lineItems, subtotal, gstAmount, totalAmount } = calculateBillTotals(items);
 
     const bill = await prisma.$transaction(async (tx) => {
@@ -255,9 +266,15 @@ router.put('/:id', async (req, res) => {
           customer: { select: { id: true, name: true, phone: true } },
           items: { orderBy: { id: 'asc' } },
           inventoryDevice: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true } },
+          inventoryDevices: { select: { id: true, vltdSerialNo: true, imeiNo: true, deviceNo: true }, orderBy: { vltdSerialNo: 'asc' } },
         },
       });
-      await assignDeviceToBill(tx, id, resolved.inventoryDeviceId, existing.inventoryDeviceId);
+      await assignDevicesToBill(
+        tx,
+        id,
+        resolved.inventoryDeviceIds,
+        [existing.inventoryDeviceId, ...existing.inventoryDevices.map((device) => device.id)].filter(Boolean) as string[],
+      );
       return updated;
     });
 
@@ -269,7 +286,7 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    await releaseBillDevice(req.params.id);
+    await releaseBillDevices(req.params.id);
     await prisma.bill.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch {

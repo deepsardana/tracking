@@ -60,9 +60,10 @@ model Bill {
   vltdSerialNo      String
   vltdImeiNo        String
   deviceId          String           @db.VarChar(30)
-  inventoryDeviceId String?          @unique
-  inventoryDevice   DeviceInventory? @relation(fields: [inventoryDeviceId], references: [id], onDelete: SetNull)
-  subtotal          Decimal          @db.Decimal(10, 2)
+  inventoryDeviceId String?           @unique
+  inventoryDevice   DeviceInventory?  @relation("PrimaryBillDevice", fields: [inventoryDeviceId], references: [id], onDelete: SetNull)
+  inventoryDevices  DeviceInventory[] @relation("BillInventoryDevices")
+  subtotal          Decimal           @db.Decimal(10, 2)
   gstAmount         Decimal          @db.Decimal(10, 2)
   totalAmount       Decimal          @db.Decimal(10, 2)
   notes             String?
@@ -84,7 +85,9 @@ model DeviceInventory {
   dispatchHex      String?      @db.VarChar(40)
   scanBy           String?      @db.VarChar(40)
   status           DeviceStatus @default(AVAILABLE)
-  bill             Bill?
+  bill             Bill?        @relation("PrimaryBillDevice")
+  billedBillId     String?
+  billedBill       Bill?        @relation("BillInventoryDevices", fields: [billedBillId], references: [id], onDelete: SetNull)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }

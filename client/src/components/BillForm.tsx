@@ -25,21 +25,32 @@ export interface BillFormValues {
   vltdSerialNo: string;
   vltdImeiNo: string;
   inventoryDeviceId?: string | null;
+  inventoryDeviceIds?: string[];
   notes?: string;
   items: BillLineFormValues[];
 }
 
+interface DevicePickerOption {
+  id: string;
+  vltdSerialNo: string;
+  imeiNo: string;
+  deviceNo: string | null;
+}
+
 interface BillFormProps {
   initialValues?: Partial<BillFormValues>;
+  initialInventoryDevices?: DevicePickerOption[];
   onSubmit: (values: BillFormValues) => Promise<void> | void;
   submitLabel?: string;
 }
 
-export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
+export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
   const { data: customers } = useCustomers();
   const { data: config } = useBillConfig();
   const { data: availableDevices } = useAvailableDevices();
   const gstPercent = config?.gstPercent ?? 18;
+  const initialDeviceIds = initialValues?.inventoryDeviceIds
+    ?? (initialValues?.inventoryDeviceId ? [initialValues.inventoryDeviceId] : []);
 
   const { register, control, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<BillFormValues>({
     defaultValues: {
@@ -47,12 +58,14 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
       billDate: new Date().toISOString().slice(0, 10),
       notes: '',
       inventoryDeviceId: null,
+      inventoryDeviceIds: [],
       ...newBillDefaults(),
       ...initialValues,
+      inventoryDeviceIds: initialDeviceIds,
     },
   });
 
-  const selectedDeviceId = watch('inventoryDeviceId');
+  const selectedDeviceIds = watch('inventoryDeviceIds') ?? [];
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const watchedItems = useWatch({ control, name: 'items' }) ?? [];
@@ -77,34 +90,35 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           vltdSerialNo: config.defaultBill.vltdSerialNo,
           vltdImeiNo: config.defaultBill.vltdImeiNo,
           inventoryDeviceId: null,
+          inventoryDeviceIds: [],
           items: config.defaultBill.items,
         }
-      : { ...newBillDefaults(), inventoryDeviceId: null };
+      : { ...newBillDefaults(), inventoryDeviceId: null, inventoryDeviceIds: [] };
     reset((current) => ({ ...current, ...defaults }));
   };
 
   const pickerDevices = [
-    ...(initialValues?.inventoryDeviceId && initialValues.vltdSerialNo
-      ? [{
-          id: initialValues.inventoryDeviceId,
-          vltdSerialNo: initialValues.vltdSerialNo,
-          imeiNo: initialValues.vltdImeiNo ?? '',
-          deviceNo: null,
-        }]
-      : []),
+    ...initialInventoryDevices,
     ...(availableDevices ?? []),
   ].filter((device, index, list) => list.findIndex((d) => d.id === device.id) === index);
 
-  const handleDeviceSelect = (deviceId: string) => {
-    if (!deviceId) {
+  const handleDevicesSelect = (deviceIds: string[]) => {
+    const uniqueDeviceIds = [...new Set(deviceIds)];
+    if (uniqueDeviceIds.length === 0) {
       setValue('inventoryDeviceId', null);
+      setValue('inventoryDeviceIds', []);
       return;
     }
-    const device = pickerDevices.find((d) => d.id === deviceId);
-    if (!device) return;
-    setValue('inventoryDeviceId', device.id);
-    setValue('vltdSerialNo', device.vltdSerialNo);
-    setValue('vltdImeiNo', device.imeiNo);
+    const devices = uniqueDeviceIds
+      .map((id) => pickerDevices.find((device) => device.id === id))
+      .filter(Boolean) as DevicePickerOption[];
+    setValue('inventoryDeviceId', devices[0]?.id ?? null);
+    setValue('inventoryDeviceIds', devices.map((device) => device.id));
+    setValue('vltdSerialNo', devices.map((device) => device.vltdSerialNo).join('\n'));
+    setValue('vltdImeiNo', devices.map((device) => device.imeiNo).join('\n'));
+    if (devices.length > 0 && fields.length === 1) {
+      setValue('items.0.quantity', devices.length);
+    }
   };
 
   const syncLineFromIncl = (index: number, value: number) => {
@@ -154,13 +168,14 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           <input type="date" {...register('billDate', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Device from inventory</label>
+          <label className="block text-sm font-medium text-gray-700">Devices from inventory</label>
           <select
-            value={selectedDeviceId ?? ''}
-            onChange={(e) => handleDeviceSelect(e.target.value)}
+            multiple
+            value={selectedDeviceIds}
+            size={Math.min(10, Math.max(4, pickerDevices.length || 4))}
+            onChange={(e) => handleDevicesSelect(Array.from(e.target.selectedOptions, (option) => option.value))}
             className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
           >
-            <option value="">— Select available device —</option>
             {pickerDevices.map((device) => (
               <option key={device.id} value={device.id}>
                 {device.vltdSerialNo} · IMEI {device.imeiNo}
@@ -169,8 +184,15 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            Pick a device to auto-fill VLTD Serial &amp; IMEI on the bill. Status syncs to inventory when saved.
+            {selectedDeviceIds.length} selected. Hold Ctrl/Cmd or Shift to select many, then save one bill for all selected devices.
           </p>
+          <button
+            type="button"
+            onClick={() => handleDevicesSelect([])}
+            className="mt-2 text-xs text-gray-600 hover:text-red-600"
+          >
+            Clear selected devices
+          </button>
           <input type="hidden" {...register('inventoryDeviceId')} />
         </div>
         <div className="col-span-2">
@@ -187,7 +209,7 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">VLTD IMEI No <span className="text-gray-400 font-normal">(optional)</span></label>
           <textarea {...register('vltdImeiNo')} rows={2} placeholder="One IMEI per line; leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
-          <p className="text-xs text-gray-500 mt-1">Pick from inventory to auto-fill one device, or enter multiple lines manually.</p>
+          <p className="text-xs text-gray-500 mt-1">Pick from inventory to auto-fill selected devices, or enter multiple lines manually.</p>
         </div>
       </div>
 

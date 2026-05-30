@@ -3,90 +3,111 @@ import { prisma } from '../db';
 
 type Tx = Prisma.TransactionClient;
 
-export async function assignDeviceToBill(
+function uniqueIds(ids: (string | null | undefined)[]) {
+  return [...new Set(ids.map((id) => id?.trim()).filter(Boolean) as string[])];
+}
+
+export async function assignDevicesToBill(
   tx: Tx,
   billId: string,
-  inventoryDeviceId: string | null | undefined,
-  previousDeviceId?: string | null,
+  inventoryDeviceIds: string[],
+  previousDeviceIds: string[] = [],
 ) {
-  if (previousDeviceId && previousDeviceId !== inventoryDeviceId) {
+  const selectedIds = uniqueIds(inventoryDeviceIds);
+  const previousIds = uniqueIds(previousDeviceIds);
+  const releaseIds = previousIds.filter((id) => !selectedIds.includes(id));
+
+  if (releaseIds.length > 0) {
     await tx.deviceInventory.updateMany({
-      where: { id: previousDeviceId, status: DeviceStatus.BILLED },
-      data: { status: DeviceStatus.AVAILABLE },
+      where: { id: { in: releaseIds }, status: DeviceStatus.BILLED },
+      data: { status: DeviceStatus.AVAILABLE, billedBillId: null },
     });
   }
 
-  if (!inventoryDeviceId) return;
+  if (selectedIds.length === 0) return;
 
-  const device = await tx.deviceInventory.findUnique({
-    where: { id: inventoryDeviceId },
-    include: { bill: { select: { id: true } } },
+  const devices = await tx.deviceInventory.findMany({
+    where: { id: { in: selectedIds } },
+    include: {
+      bill: { select: { id: true } },
+      billedBill: { select: { id: true } },
+    },
   });
-  if (!device) throw new Error('Device not found in inventory');
-  if (device.status === DeviceStatus.BILLED && device.bill?.id !== billId) {
-    throw new Error('Device is already billed');
+
+  if (devices.length !== selectedIds.length) {
+    throw new Error('One or more selected inventory devices were not found');
   }
 
-  await tx.deviceInventory.update({
-    where: { id: inventoryDeviceId },
-    data: { status: DeviceStatus.BILLED },
+  for (const device of devices) {
+    const belongsToThisBill = device.bill?.id === billId || device.billedBill?.id === billId;
+    if (device.status === DeviceStatus.BILLED && !belongsToThisBill) {
+      throw new Error(`${device.vltdSerialNo} is already billed`);
+    }
+  }
+
+  await tx.deviceInventory.updateMany({
+    where: { id: { in: selectedIds } },
+    data: { status: DeviceStatus.BILLED, billedBillId: billId },
   });
 }
 
-export async function releaseBillDevice(billId: string) {
-  const bill = await prisma.bill.findUnique({
-    where: { id: billId },
-    select: { inventoryDeviceId: true },
-  });
-  if (!bill?.inventoryDeviceId) return;
-
+export async function releaseBillDevices(billId: string) {
   await prisma.deviceInventory.updateMany({
-    where: { id: bill.inventoryDeviceId, status: DeviceStatus.BILLED },
-    data: { status: DeviceStatus.AVAILABLE },
+    where: {
+      OR: [
+        { billedBillId: billId },
+        { bill: { id: billId } },
+      ],
+      status: DeviceStatus.BILLED,
+    },
+    data: { status: DeviceStatus.AVAILABLE, billedBillId: null },
   });
 }
 
-export async function resolveInventoryDevice(
-  inventoryDeviceId: string | null | undefined,
+export async function resolveInventoryDevices(
+  inventoryDeviceIds: string[],
   vltdSerialNo: string,
   vltdImeiNo: string,
   billId?: string,
 ) {
-  if (inventoryDeviceId) {
-    const device = await prisma.deviceInventory.findUnique({
-      where: { id: inventoryDeviceId },
-      include: { bill: { select: { id: true } } },
+  const selectedIds = uniqueIds(inventoryDeviceIds);
+
+  if (selectedIds.length > 0) {
+    const devices = await prisma.deviceInventory.findMany({
+      where: { id: { in: selectedIds } },
+      include: {
+        bill: { select: { id: true } },
+        billedBill: { select: { id: true } },
+      },
     });
-    if (!device) throw new Error('Selected device not found');
-    if (device.status === DeviceStatus.BILLED && device.bill?.id !== billId) {
-      throw new Error('Selected device is already billed');
+
+    if (devices.length !== selectedIds.length) {
+      throw new Error('One or more selected inventory devices were not found');
     }
+
+    for (const device of devices) {
+      const belongsToThisBill = device.bill?.id === billId || device.billedBill?.id === billId;
+      if (device.status === DeviceStatus.BILLED && !belongsToThisBill) {
+        throw new Error(`${device.vltdSerialNo} is already billed`);
+      }
+    }
+
+    const ordered = selectedIds
+      .map((id) => devices.find((device) => device.id === id))
+      .filter(Boolean) as typeof devices;
+
     return {
-      inventoryDeviceId: device.id,
-      vltdSerialNo: device.vltdSerialNo,
-      vltdImeiNo: device.imeiNo,
+      inventoryDeviceId: ordered[0]?.id ?? null,
+      inventoryDeviceIds: ordered.map((device) => device.id),
+      vltdSerialNo: ordered.map((device) => device.vltdSerialNo).join('\\n'),
+      vltdImeiNo: ordered.map((device) => device.imeiNo).join('\\n'),
     };
   }
 
-  if (vltdSerialNo) {
-    const bySerial = await prisma.deviceInventory.findUnique({
-      where: { vltdSerialNo },
-      include: { bill: { select: { id: true } } },
-    });
-    if (bySerial) {
-    if (bySerial.status === DeviceStatus.BILLED && bySerial.bill?.id !== billId) {
-      throw new Error('Device serial already billed in inventory');
-    }
-    if (vltdImeiNo && bySerial.imeiNo !== vltdImeiNo) {
-      throw new Error('IMEI does not match inventory record for this serial');
-    }
-    return {
-      inventoryDeviceId: bySerial.id,
-      vltdSerialNo: bySerial.vltdSerialNo,
-      vltdImeiNo: bySerial.imeiNo,
-    };
-    }
-  }
-
-  return { inventoryDeviceId: null, vltdSerialNo: vltdSerialNo.trim(), vltdImeiNo: vltdImeiNo.trim() };
+  return {
+    inventoryDeviceId: null,
+    inventoryDeviceIds: [],
+    vltdSerialNo: vltdSerialNo.trim(),
+    vltdImeiNo: vltdImeiNo.trim(),
+  };
 }

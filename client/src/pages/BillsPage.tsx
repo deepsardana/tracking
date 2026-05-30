@@ -116,6 +116,11 @@ export function BillsPage() {
     vltdSerialNo: bill.vltdSerialNo ?? bill.deviceId,
     vltdImeiNo: bill.vltdImeiNo ?? '',
     inventoryDeviceId: bill.inventoryDeviceId ?? bill.inventoryDevice?.id ?? null,
+    inventoryDeviceIds: bill.inventoryDevices?.length
+      ? bill.inventoryDevices.map((device) => device.id)
+      : bill.inventoryDeviceId || bill.inventoryDevice?.id
+        ? [bill.inventoryDeviceId ?? bill.inventoryDevice!.id]
+        : [],
     notes: bill.notes ?? '',
     items: bill.items.map((item) => ({
       description: item.description,
@@ -278,6 +283,7 @@ export function BillsPage() {
           <BillForm
             key={editing.id}
             initialValues={billToFormValues(editing)}
+            initialInventoryDevices={editing.inventoryDevices?.length ? editing.inventoryDevices : editing.inventoryDevice ? [editing.inventoryDevice] : []}
             onSubmit={handleUpdate}
             submitLabel="Update Bill"
           />

@@ -39,12 +39,16 @@ async function upsertDevices(rows: ParsedDeviceRow[]) {
     try {
       const existing = await prisma.deviceInventory.findUnique({
         where: { vltdSerialNo: row.vltdSerialNo },
-        include: { bill: { select: { invoiceNo: true } } },
+        include: {
+          bill: { select: { invoiceNo: true } },
+          billedBill: { select: { invoiceNo: true } },
+        },
       });
 
       if (existing?.status === DeviceStatus.BILLED) {
         skipped += 1;
-        errors.push(`${row.vltdSerialNo}: already billed${existing.bill ? ` (${existing.bill.invoiceNo})` : ''}`);
+        const bill = existing.bill ?? existing.billedBill;
+        errors.push(`${row.vltdSerialNo}: already billed${bill ? ` (${bill.invoiceNo})` : ''}`);
         continue;
       }
 
@@ -83,11 +87,14 @@ function parseUploadBuffer(filename: string, buffer: Buffer): ParsedDeviceRow[] 
 
 router.get('/export', async (_req, res) => {
   const devices = await prisma.deviceInventory.findMany({
-    include: { bill: { select: { invoiceNo: true, vehicleId: true } } },
+    include: {
+      bill: { select: { invoiceNo: true, vehicleId: true } },
+      billedBill: { select: { invoiceNo: true, vehicleId: true } },
+    },
     orderBy: { vltdSerialNo: 'asc' },
   });
 
-  const rows = devices.map((device) => deviceToExportRow(device));
+  const rows = devices.map((device) => deviceToExportRow({ ...device, bill: device.bill ?? device.billedBill }));
   const sheet = XLSX.utils.json_to_sheet(rows, { header: [...INVENTORY_EXPORT_HEADERS] });
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, 'Inventory');
@@ -132,10 +139,13 @@ router.get('/', async (req, res) => {
 
   const devices = await prisma.deviceInventory.findMany({
     where,
-    include: { bill: { select: { id: true, invoiceNo: true, vehicleId: true, billDate: true } } },
+    include: {
+      bill: { select: { id: true, invoiceNo: true, vehicleId: true, billDate: true } },
+      billedBill: { select: { id: true, invoiceNo: true, vehicleId: true, billDate: true } },
+    },
     orderBy: { vltdSerialNo: 'asc' },
   });
-  res.json(devices);
+  res.json(devices.map((device) => ({ ...device, bill: device.bill ?? device.billedBill })));
 });
 
 router.post('/', async (req, res) => {
