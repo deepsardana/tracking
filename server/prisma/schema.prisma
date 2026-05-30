@@ -20,6 +20,11 @@ enum PaymentMode {
   CHEQUE
 }
 
+enum DeviceStatus {
+  AVAILABLE
+  BILLED
+}
+
 model Customer {
   id           String        @id @default(uuid())
   name         String
@@ -46,22 +51,42 @@ model Transaction {
 }
 
 model Bill {
-  id           String     @id @default(uuid())
-  customerId   String
-  customer     Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  billDate     DateTime
-  invoiceNo    String     @db.VarChar(40)
-  vehicleId    String     @db.VarChar(30)
-  vltdSerialNo String     @db.VarChar(40)
-  vltdImeiNo   String     @db.VarChar(20)
-  deviceId     String     @db.VarChar(30)
-  subtotal    Decimal    @db.Decimal(10, 2)
-  gstAmount   Decimal    @db.Decimal(10, 2)
-  totalAmount Decimal    @db.Decimal(10, 2)
-  notes       String?
-  items       BillItem[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                String           @id @default(uuid())
+  customerId        String
+  customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  billDate          DateTime
+  invoiceNo         String           @db.VarChar(40)
+  vehicleId         String           @db.VarChar(30)
+  vltdSerialNo      String           @db.VarChar(40)
+  vltdImeiNo        String           @db.VarChar(20)
+  deviceId          String           @db.VarChar(30)
+  inventoryDeviceId String?          @unique
+  inventoryDevice   DeviceInventory? @relation(fields: [inventoryDeviceId], references: [id], onDelete: SetNull)
+  subtotal          Decimal          @db.Decimal(10, 2)
+  gstAmount         Decimal          @db.Decimal(10, 2)
+  totalAmount       Decimal          @db.Decimal(10, 2)
+  notes             String?
+  items             BillItem[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model DeviceInventory {
+  id               String       @id @default(uuid())
+  vltdSerialNo     String       @unique @db.VarChar(40)
+  imeiNo           String       @db.VarChar(20)
+  deviceNo         String?      @db.VarChar(20)
+  iccid            String?      @db.VarChar(25)
+  qrCode           String?      @db.VarChar(120)
+  billingCompany   String?      @db.VarChar(80)
+  dispatchCustomer String?      @db.VarChar(80)
+  pcba             String?      @db.VarChar(40)
+  dispatchHex      String?      @db.VarChar(40)
+  scanBy           String?      @db.VarChar(40)
+  status           DeviceStatus @default(AVAILABLE)
+  bill             Bill?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
 
 model BillItem {

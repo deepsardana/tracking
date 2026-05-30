@@ -1,6 +1,6 @@
 # DRG Power Admin
 
-Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — manage customers, debit/credit transactions, and print **VLTD tax invoices** (same layout as your company bill / Tally invoice).
+Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — device inventory (Excel import/export), customers, debit/credit transactions, and **VLTD tax invoices** synced with inventory.
 
 ## Prerequisites
 
@@ -48,7 +48,8 @@ Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — manage customers, debit/
 | `/customers/summary` | Customer-wise DR/CR/balance; click a name to filter transactions |
 | `/customers` | Customer CRUD (add/edit/delete) |
 | `/transactions` | Transaction CRUD with filters (customer, type, date range) |
-| `/bills` | Bills with line items, fixed GST %, device/vehicle (default PDD / HR73) |
+| `/inventory` | Device inventory — import/export Excel or TXT (Sunil DRG list), track Available vs Billed |
+| `/bills` | Tax invoices — pick device from inventory (auto serial/IMEI), print DRG bill |
 
 ## Project Layout
 

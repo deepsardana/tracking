@@ -19,6 +19,7 @@ export function Sidebar() {
         <NavLink to="/customers/summary" className={linkClass}>Customer Summary</NavLink>
         <NavLink to="/customers" className={linkClass}>Customers</NavLink>
         <NavLink to="/transactions" className={linkClass}>Transactions</NavLink>
+        <NavLink to="/inventory" className={linkClass}>Device Inventory</NavLink>
         <NavLink to="/bills" className={linkClass}>Tax Invoices</NavLink>
       </nav>
       <button

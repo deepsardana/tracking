@@ -7,6 +7,7 @@ import customerRoutes from './routes/customers';
 import transactionRoutes from './routes/transactions';
 import dashboardRoutes from './routes/dashboard';
 import billRoutes from './routes/bills';
+import inventoryRoutes from './routes/inventory';
 import { jwtAuth } from './middleware/jwtAuth';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/customers', jwtAuth, customerRoutes);
 app.use('/api/transactions', jwtAuth, transactionRoutes);
 app.use('/api/dashboard', jwtAuth, dashboardRoutes);
 app.use('/api/bills', jwtAuth, billRoutes);
+app.use('/api/inventory', jwtAuth, inventoryRoutes);
 
 // In production, serve the built React app and let React Router handle all other routes
 if (IS_PROD) {

@@ -2,6 +2,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import { useCustomers } from '../api/customers';
 import { useBillConfig } from '../api/bills';
+import { useAvailableDevices } from '../api/inventory';
 import { calculateBillTotals } from '../lib/billing';
 import { DEFAULT_LINE_ITEM, newBillDefaults } from '../lib/billTemplate';
 import { DRG_APP } from '../lib/company';
@@ -23,6 +24,7 @@ export interface BillFormValues {
   vehicleId: string;
   vltdSerialNo: string;
   vltdImeiNo: string;
+  inventoryDeviceId?: string | null;
   notes?: string;
   items: BillLineFormValues[];
 }
@@ -36,17 +38,21 @@ interface BillFormProps {
 export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
   const { data: customers } = useCustomers();
   const { data: config } = useBillConfig();
+  const { data: availableDevices } = useAvailableDevices();
   const gstPercent = config?.gstPercent ?? 18;
 
-  const { register, control, handleSubmit, reset, formState: { isSubmitting } } = useForm<BillFormValues>({
+  const { register, control, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<BillFormValues>({
     defaultValues: {
       customerId: '',
       billDate: new Date().toISOString().slice(0, 10),
       notes: '',
+      inventoryDeviceId: null,
       ...newBillDefaults(),
       ...initialValues,
     },
   });
+
+  const selectedDeviceId = watch('inventoryDeviceId');
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const watchedItems = useWatch({ control, name: 'items' }) ?? [];
@@ -70,10 +76,35 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           vehicleId: config.defaultBill.vehicleId,
           vltdSerialNo: config.defaultBill.vltdSerialNo,
           vltdImeiNo: config.defaultBill.vltdImeiNo,
+          inventoryDeviceId: null,
           items: config.defaultBill.items,
         }
-      : newBillDefaults();
+      : { ...newBillDefaults(), inventoryDeviceId: null };
     reset((current) => ({ ...current, ...defaults }));
+  };
+
+  const pickerDevices = [
+    ...(initialValues?.inventoryDeviceId && initialValues.vltdSerialNo
+      ? [{
+          id: initialValues.inventoryDeviceId,
+          vltdSerialNo: initialValues.vltdSerialNo,
+          imeiNo: initialValues.vltdImeiNo ?? '',
+          deviceNo: null,
+        }]
+      : []),
+    ...(availableDevices ?? []),
+  ].filter((device, index, list) => list.findIndex((d) => d.id === device.id) === index);
+
+  const handleDeviceSelect = (deviceId: string) => {
+    if (!deviceId) {
+      setValue('inventoryDeviceId', null);
+      return;
+    }
+    const device = pickerDevices.find((d) => d.id === deviceId);
+    if (!device) return;
+    setValue('inventoryDeviceId', device.id);
+    setValue('vltdSerialNo', device.vltdSerialNo);
+    setValue('vltdImeiNo', device.imeiNo);
   };
 
   return (
@@ -105,6 +136,26 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
         <div>
           <label className="block text-sm font-medium text-gray-700">Dated</label>
           <input type="date" {...register('billDate', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Device from inventory</label>
+          <select
+            value={selectedDeviceId ?? ''}
+            onChange={(e) => handleDeviceSelect(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+          >
+            <option value="">— Select available device —</option>
+            {pickerDevices.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.vltdSerialNo} · IMEI {device.imeiNo}
+                {device.deviceNo ? ` · ${device.deviceNo}` : ''}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Pick a device to auto-fill VLTD Serial &amp; IMEI on the bill. Status syncs to inventory when saved.
+          </p>
+          <input type="hidden" {...register('inventoryDeviceId')} />
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">Consignee / Buyer (Vehicle Reg No on bill)</label>

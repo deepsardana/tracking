@@ -5,6 +5,7 @@ import { CustomerSummaryPage } from './pages/CustomerSummaryPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { BillsPage } from './pages/BillsPage';
+import { InventoryPage } from './pages/InventoryPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Sidebar } from './components/Sidebar';
 
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/customers" element={<Protected><CustomersPage /></Protected>} />
       <Route path="/transactions" element={<Protected><TransactionsPage /></Protected>} />
       <Route path="/bills" element={<Protected><BillsPage /></Protected>} />
+      <Route path="/inventory" element={<Protected><InventoryPage /></Protected>} />
     </Routes>
   );
 }

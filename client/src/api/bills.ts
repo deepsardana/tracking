@@ -35,11 +35,13 @@ export interface Bill {
   vehicleId: string;
   vltdSerialNo: string;
   vltdImeiNo: string;
+  inventoryDeviceId?: string | null;
   deviceId: string;
   subtotal: string;
   gstAmount: string;
   totalAmount: string;
   notes: string | null;
+  inventoryDevice?: { id: string; vltdSerialNo: string; imeiNo: string; deviceNo: string | null } | null;
   items: BillItem[];
   createdAt: string;
   updatedAt: string;
@@ -68,6 +70,7 @@ export interface BillInput {
   vehicleId: string;
   vltdSerialNo: string;
   vltdImeiNo: string;
+  inventoryDeviceId?: string | null;
   notes?: string;
   items: BillItemInput[];
 }
@@ -113,7 +116,10 @@ export function useCreateBill() {
       const { data } = await api.post<Bill>('/bills', input);
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 }
 
@@ -125,7 +131,10 @@ export function useUpdateBill() {
       const { data } = await api.put<Bill>(`/bills/${id}`, rest);
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 }
 
@@ -135,6 +144,9 @@ export function useDeleteBill() {
     mutationFn: async (id: string) => {
       await api.delete(`/bills/${id}`);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 }

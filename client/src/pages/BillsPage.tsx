@@ -115,6 +115,7 @@ export function BillsPage() {
     vehicleId: bill.vehicleId,
     vltdSerialNo: bill.vltdSerialNo ?? bill.deviceId,
     vltdImeiNo: bill.vltdImeiNo ?? '',
+    inventoryDeviceId: bill.inventoryDeviceId ?? bill.inventoryDevice?.id ?? null,
     notes: bill.notes ?? '',
     items: bill.items.map((item) => ({
       description: item.description,
@@ -140,7 +141,7 @@ export function BillsPage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">
-        Your official DRG Power tax invoice — same layout as your printed bill. GST {gstPercent}% fixed. Change invoice no, vehicle reg, VLTD serial/IMEI, and line items; print or save when ready.
+        Select a device from inventory or enter serial/IMEI manually. GST {gstPercent}% fixed. Print matches your DRG Power bill.
       </p>
 
       <div className="bg-white rounded shadow border border-gray-200 p-4 mb-4 grid grid-cols-3 gap-3">

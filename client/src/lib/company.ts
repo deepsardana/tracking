@@ -5,7 +5,7 @@ export const DRG_APP = {
   shortName: 'DRG Power',
   legalName: 'DRG POWER TECHNOLOGY PVT. LTD. (2025-26)',
   appTitle: 'DRG Power Admin',
-  tagline: 'Customers · Transactions · VLTD Tax Invoices',
+  tagline: 'Device inventory · Customers · Tax invoices',
   location: 'Gurgaon, Haryana',
 } as const;
 
