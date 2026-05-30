@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d customer_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy   # waits until Postgres is ready
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Points to the 'db' service above — do not change the hostname
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/customer_db?schema=public
+      # ⚠️  Change these before deploying anywhere real
+      JWT_SECRET: change_me_to_a_long_random_string
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: admin123
+
+volumes:
+  postgres_data:
