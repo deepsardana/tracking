@@ -60,18 +60,54 @@ my-app/
 
 ## Deploy on Railway (npm / Nixpacks)
 
-Railway is configured for **npm**, not Docker (`railway.toml` → `builder = "NIXPACKS"`).
+**Step-by-step:** see [DEPLOY_RAILWAY.md](./DEPLOY_RAILWAY.md)
 
-1. Create a **PostgreSQL** plugin and link it to the app (`DATABASE_URL`).
-2. Set variables: `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `GST_PERCENT`.
-3. In Railway **Settings → Build**:
-   - Builder: **Nixpacks** (or Railpack)
-   - Build command: `npm run build` (default from `railway.toml`)
-   - Start command: `npm start` (runs migrations + server)
-4. If Railway still builds with Docker, turn off **Use Dockerfile** or delete the Dockerfile from the repo branch you deploy.
-5. Health check: `GET /api/health`
+### 1. Add PostgreSQL and `DATABASE_URL` (required)
 
-Local Docker (`Dockerfile`) is optional and not used by Railway when Nixpacks is selected.
+The app **will not start** without `DATABASE_URL`. Your deploy log error `Environment variable not found: DATABASE_URL` means this step is missing.
+
+1. In your Railway project: **+ New** → **Database** → **PostgreSQL**.
+2. Open your **app service** (not the database service).
+3. Go to **Variables** → **+ New Variable** → **Variable Reference** (or **Add Reference**).
+4. Select the **PostgreSQL** service → pick **`DATABASE_URL`** → save.
+5. **Redeploy** the app service.
+
+You can also add manually (name must be exactly `DATABASE_URL`):
+
+```text
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+```
+
+(Use the reference picker if the syntax differs in your Railway UI.)
+
+### 2. Other variables (app service)
+
+| Variable | Example |
+|----------|---------|
+| `JWT_SECRET` | long random string |
+| `ADMIN_EMAIL` | `admin@example.com` |
+| `ADMIN_PASSWORD` | your password |
+| `GST_PERCENT` | `18` (optional) |
+
+### 3. Root directory
+
+Your logs show `server@1.0.0` — Railway is using **`server/`** as the root directory. That is fine; use `server/railway.toml` settings:
+
+- **Build:** `npm run prisma:generate && npm run build`
+- **Start:** `npm run start:prod`
+
+To deploy the **full app** (API + React UI), set **Root Directory** to empty (repo root) and use the root `railway.toml`:
+
+- **Build:** `npm run build`
+- **Start:** `npm start`
+
+### 4. Builder
+
+Use **Nixpacks**, not Docker. There is **no `Dockerfile` in the repo root** (only `docker/Dockerfile` for local compose). If build logs still say `load build definition from Dockerfile`, set Builder to **Nixpacks** in Railway Settings → Build.
+
+### 5. Health check
+
+`GET /api/health` — works once `DATABASE_URL` is set and migrations succeed.
 
 ## Notes
 

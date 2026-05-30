@@ -1,11 +1,19 @@
 import { Router } from 'express';
 import { prisma } from '../db';
 import { calculateBillTotals, FIXED_GST_PERCENT } from '../config/billing';
+import { BILL_COMPANY, DEFAULT_VLTD_BILL, suggestInvoiceNo } from '../config/billTemplate';
 
 const router = Router();
 
 router.get('/config', (_req, res) => {
-  res.json({ gstPercent: FIXED_GST_PERCENT });
+  res.json({
+    gstPercent: FIXED_GST_PERCENT,
+    company: BILL_COMPANY,
+    defaultBill: {
+      ...DEFAULT_VLTD_BILL,
+      invoiceNo: suggestInvoiceNo(),
+    },
+  });
 });
 
 router.get('/', async (req, res) => {
@@ -42,14 +50,36 @@ router.get('/:id', async (req, res) => {
   res.json(bill);
 });
 
-router.post('/', async (req, res) => {
-  const { customerId, billDate, deviceId, vehicleId, notes, items } = req.body;
+function parseBillBody(body: Record<string, unknown>) {
+  const customerId = body.customerId as string;
+  const billDate = body.billDate as string;
+  const invoiceNo = (body.invoiceNo as string)?.trim();
+  const vehicleId = (body.vehicleId as string)?.trim();
+  const vltdSerialNo = (body.vltdSerialNo as string)?.trim();
+  const vltdImeiNo = (body.vltdImeiNo as string)?.trim();
+  const notes = body.notes as string | undefined;
+  const items = body.items;
+  return { customerId, billDate, invoiceNo, vehicleId, vltdSerialNo, vltdImeiNo, notes, items };
+}
 
-  if (!customerId || !billDate || !deviceId || !vehicleId || !Array.isArray(items) || items.length === 0) {
+router.post('/', async (req, res) => {
+  const { customerId, billDate, invoiceNo, vehicleId, vltdSerialNo, vltdImeiNo, notes, items } =
+    parseBillBody(req.body);
+
+  if (
+    !customerId ||
+    !billDate ||
+    !invoiceNo ||
+    !vehicleId ||
+    !vltdSerialNo ||
+    !vltdImeiNo ||
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
     return res.status(400).json({ error: 'Missing required fields or items' });
   }
-  if (deviceId.length > 30 || vehicleId.length > 30) {
-    return res.status(400).json({ error: 'deviceId and vehicleId must be max 30 chars' });
+  if (invoiceNo.length > 40 || vehicleId.length > 30 || vltdSerialNo.length > 40 || vltdImeiNo.length > 20) {
+    return res.status(400).json({ error: 'Invoice / vehicle / serial / IMEI exceeds max length' });
   }
 
   for (const item of items) {
@@ -64,8 +94,11 @@ router.post('/', async (req, res) => {
     data: {
       customerId,
       billDate: new Date(billDate),
-      deviceId,
+      invoiceNo,
       vehicleId,
+      vltdSerialNo,
+      vltdImeiNo,
+      deviceId: vltdSerialNo.slice(0, 30),
       subtotal,
       gstAmount,
       totalAmount,
@@ -89,13 +122,23 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { customerId, billDate, deviceId, vehicleId, notes, items } = req.body;
+  const { customerId, billDate, invoiceNo, vehicleId, vltdSerialNo, vltdImeiNo, notes, items } =
+    parseBillBody(req.body);
 
-  if (!customerId || !billDate || !deviceId || !vehicleId || !Array.isArray(items) || items.length === 0) {
+  if (
+    !customerId ||
+    !billDate ||
+    !invoiceNo ||
+    !vehicleId ||
+    !vltdSerialNo ||
+    !vltdImeiNo ||
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
     return res.status(400).json({ error: 'Missing required fields or items' });
   }
-  if (deviceId.length > 30 || vehicleId.length > 30) {
-    return res.status(400).json({ error: 'deviceId and vehicleId must be max 30 chars' });
+  if (invoiceNo.length > 40 || vehicleId.length > 30 || vltdSerialNo.length > 40 || vltdImeiNo.length > 20) {
+    return res.status(400).json({ error: 'Invoice / vehicle / serial / IMEI exceeds max length' });
   }
 
   const { lineItems, subtotal, gstAmount, totalAmount } = calculateBillTotals(items);
@@ -108,8 +151,11 @@ router.put('/:id', async (req, res) => {
         data: {
           customerId,
           billDate: new Date(billDate),
-          deviceId,
+          invoiceNo,
           vehicleId,
+          vltdSerialNo,
+          vltdImeiNo,
+          deviceId: vltdSerialNo.slice(0, 30),
           subtotal,
           gstAmount,
           totalAmount,

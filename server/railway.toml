@@ -1,0 +1,9 @@
+# Use when Railway "Root Directory" is set to server/
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run prisma:generate && npm run build"
+
+[deploy]
+startCommand = "npm run start:prod"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120

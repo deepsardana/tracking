@@ -9,13 +9,23 @@ export interface BillItem {
   amount: string;
 }
 
+export interface BillCompany {
+  name: string;
+  address: string;
+  phone: string;
+  gstin: string;
+}
+
 export interface Bill {
   id: string;
   customerId: string;
   customer: { id: string; name: string; phone: string };
   billDate: string;
-  deviceId: string;
+  invoiceNo: string;
   vehicleId: string;
+  vltdSerialNo: string;
+  vltdImeiNo: string;
+  deviceId: string;
   subtotal: string;
   gstAmount: string;
   totalAmount: string;
@@ -40,17 +50,31 @@ export interface BillItemInput {
 export interface BillInput {
   customerId: string;
   billDate: string;
-  deviceId: string;
+  invoiceNo: string;
   vehicleId: string;
+  vltdSerialNo: string;
+  vltdImeiNo: string;
   notes?: string;
   items: BillItemInput[];
+}
+
+export interface BillConfig {
+  gstPercent: number;
+  company: BillCompany;
+  defaultBill: {
+    invoiceNo: string;
+    vehicleId: string;
+    vltdSerialNo: string;
+    vltdImeiNo: string;
+    items: BillItemInput[];
+  };
 }
 
 export function useBillConfig() {
   return useQuery({
     queryKey: ['bills', 'config'],
-    queryFn: async (): Promise<{ gstPercent: number }> => {
-      const { data } = await api.get<{ gstPercent: number }>('/bills/config');
+    queryFn: async (): Promise<BillConfig> => {
+      const { data } = await api.get<BillConfig>('/bills/config');
       return data;
     },
     staleTime: Infinity,

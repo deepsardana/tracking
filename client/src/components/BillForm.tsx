@@ -1,14 +1,17 @@
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, FileText } from 'lucide-react';
 import { useCustomers } from '../api/customers';
 import { useBillConfig } from '../api/bills';
 import { calculateBillTotals } from '../lib/billing';
+import { DEFAULT_VLTD_BILL, newBillDefaults } from '../lib/billTemplate';
 
 export interface BillFormValues {
   customerId: string;
   billDate: string;
-  deviceId: string;
+  invoiceNo: string;
   vehicleId: string;
+  vltdSerialNo: string;
+  vltdImeiNo: string;
   notes?: string;
   items: { description: string; quantity: number; unitPrice: number }[];
 }
@@ -26,14 +29,12 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
   const { data: config } = useBillConfig();
   const gstPercent = config?.gstPercent ?? 18;
 
-  const { register, control, handleSubmit, formState: { isSubmitting } } = useForm<BillFormValues>({
+  const { register, control, handleSubmit, reset, formState: { isSubmitting } } = useForm<BillFormValues>({
     defaultValues: {
       customerId: '',
       billDate: new Date().toISOString().slice(0, 10),
-      deviceId: 'PDD',
-      vehicleId: 'HR73',
       notes: '',
-      items: [{ description: 'GPS device & installation', quantity: 1, unitPrice: 0 }],
+      ...newBillDefaults(),
       ...initialValues,
     },
   });
@@ -49,8 +50,38 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
     gstPercent,
   );
 
+  const applyDefaultTemplate = () => {
+    const defaults = config?.defaultBill
+      ? {
+          invoiceNo: config.defaultBill.invoiceNo,
+          vehicleId: config.defaultBill.vehicleId,
+          vltdSerialNo: config.defaultBill.vltdSerialNo,
+          vltdImeiNo: config.defaultBill.vltdImeiNo,
+          items: config.defaultBill.items,
+        }
+      : newBillDefaults();
+    reset((current) => ({
+      ...current,
+      ...defaults,
+    }));
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3">
+        <p className="text-sm text-blue-900">
+          VLTD bill template (same as HR73B5666). Change invoice no, serial &amp; IMEI per customer.
+        </p>
+        <button
+          type="button"
+          onClick={applyDefaultTemplate}
+          className="flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 font-medium shrink-0"
+        >
+          <FileText size={14} />
+          Reset template
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">Customer</label>
@@ -65,6 +96,15 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           </select>
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700">Invoice No</label>
+          <input
+            {...register('invoiceNo', { required: true, maxLength: 40 })}
+            maxLength={40}
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono"
+            placeholder={DEFAULT_VLTD_BILL.invoiceNo}
+          />
+        </div>
+        <div>
           <label className="block text-sm font-medium text-gray-700">Bill Date</label>
           <input
             type="date"
@@ -72,28 +112,39 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
             className="w-full border border-gray-300 rounded px-3 py-2"
           />
         </div>
-        <div />
         <div>
-          <label className="block text-sm font-medium text-gray-700">Device ID</label>
-          <input
-            {...register('deviceId', { required: true, maxLength: 30 })}
-            maxLength={30}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Vehicle ID</label>
+          <label className="block text-sm font-medium text-gray-700">Vehicle Reg No</label>
           <input
             {...register('vehicleId', { required: true, maxLength: 30 })}
             maxLength={30}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase"
+            placeholder="HR73B5666"
+          />
+        </div>
+        <div />
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">VLTD Serial No</label>
+          <input
+            {...register('vltdSerialNo', { required: true, maxLength: 40 })}
+            maxLength={40}
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+            placeholder="DRG1T1A042600000091"
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">VLTD IMEI No</label>
+          <input
+            {...register('vltdImeiNo', { required: true, maxLength: 20 })}
+            maxLength={20}
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+            placeholder="865820071384080"
           />
         </div>
       </div>
 
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-sm font-medium text-gray-700">Line Items</label>
+          <label className="text-sm font-medium text-gray-700">Line Items (edit rates as needed)</label>
           <button
             type="button"
             onClick={() => append({ ...defaultItem })}
@@ -123,7 +174,6 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
                       <input
                         {...register(`items.${index}.description`, { required: true })}
                         className="w-full border border-gray-300 rounded px-2 py-1"
-                        placeholder="Item description"
                       />
                     </td>
                     <td className="p-2">
@@ -183,7 +233,7 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Notes</label>
+        <label className="block text-sm font-medium text-gray-700">Remarks</label>
         <textarea
           {...register('notes')}
           rows={2}

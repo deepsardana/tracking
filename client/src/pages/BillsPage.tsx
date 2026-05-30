@@ -10,6 +10,7 @@ import {
   useDeleteBill,
   useBillConfig,
   Bill,
+  BillCompany,
 } from '../api/bills';
 import { useCustomers } from '../api/customers';
 import { Modal } from '../components/Modal';
@@ -18,11 +19,13 @@ import { BillForm, BillFormValues } from '../components/BillForm';
 function BillDetail({
   bill,
   gstPercent,
+  company,
   onPrint,
   onSave,
 }: {
   bill: Bill;
   gstPercent: number;
+  company?: BillCompany;
   onPrint: () => void;
   onSave: () => void;
 }) {
@@ -46,17 +49,17 @@ function BillDetail({
           Save
         </button>
       </div>
-      <BillDocument bill={bill} gstPercent={gstPercent} />
+      <BillDocument bill={bill} gstPercent={gstPercent} company={company} />
     </div>
   );
 }
 
-function handlePrintBill(bill: Bill, gstPercent: number) {
-  printBill(bill, gstPercent);
+function handlePrintBill(bill: Bill, gstPercent: number, company?: BillCompany) {
+  printBill(bill, gstPercent, company);
 }
 
-function handleSaveBill(bill: Bill, gstPercent: number) {
-  saveBill(bill, gstPercent);
+function handleSaveBill(bill: Bill, gstPercent: number, company?: BillCompany) {
+  saveBill(bill, gstPercent, company);
 }
 
 export function BillsPage() {
@@ -106,8 +109,10 @@ export function BillsPage() {
   const billToFormValues = (bill: Bill): Partial<BillFormValues> => ({
     customerId: bill.customerId,
     billDate: bill.billDate.slice(0, 10),
-    deviceId: bill.deviceId,
+    invoiceNo: bill.invoiceNo ?? bill.vehicleId,
     vehicleId: bill.vehicleId,
+    vltdSerialNo: bill.vltdSerialNo ?? bill.deviceId,
+    vltdImeiNo: bill.vltdImeiNo ?? '',
     notes: bill.notes ?? '',
     items: bill.items.map((item) => ({
       description: item.description,
@@ -129,8 +134,7 @@ export function BillsPage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">
-        GST is fixed at {gstPercent}% on subtotal. Line amounts are calculated from quantity × rate per item.
-        Default device/vehicle: PDD / HR73.
+        VLTD tax invoice (HR73B5666 template). GST fixed at {gstPercent}%. Edit invoice no, serial no &amp; IMEI per bill.
       </p>
 
       <div className="bg-white rounded shadow border border-gray-200 p-4 mb-4 grid grid-cols-3 gap-3">
@@ -176,8 +180,9 @@ export function BillsPage() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="text-left p-3 text-sm font-semibold">Customer</th>
+                <th className="text-left p-3 text-sm font-semibold">Invoice</th>
                 <th className="text-left p-3 text-sm font-semibold">Date</th>
-                <th className="text-left p-3 text-sm font-semibold">Device</th>
+                <th className="text-left p-3 text-sm font-semibold">Serial / IMEI</th>
                 <th className="text-left p-3 text-sm font-semibold">Vehicle</th>
                 <th className="text-right p-3 text-sm font-semibold">Subtotal</th>
                 <th className="text-right p-3 text-sm font-semibold">GST</th>
@@ -190,8 +195,12 @@ export function BillsPage() {
               {data.map((bill) => (
                 <tr key={bill.id} className="border-t border-gray-200">
                   <td className="p-3">{bill.customer.name}</td>
+                  <td className="p-3 font-mono text-xs">{bill.invoiceNo ?? '—'}</td>
                   <td className="p-3">{new Date(bill.billDate).toLocaleDateString()}</td>
-                  <td className="p-3">{bill.deviceId}</td>
+                  <td className="p-3 text-xs font-mono">
+                    <div>{bill.vltdSerialNo ?? bill.deviceId}</div>
+                    <div className="text-gray-500">{bill.vltdImeiNo ?? ''}</div>
+                  </td>
                   <td className="p-3">{bill.vehicleId}</td>
                   <td className="p-3 text-right">₹{Number(bill.subtotal).toFixed(2)}</td>
                   <td className="p-3 text-right text-gray-600">₹{Number(bill.gstAmount).toFixed(2)}</td>
@@ -199,7 +208,7 @@ export function BillsPage() {
                   <td className="p-3">
                     <div className="flex justify-center gap-1">
                       <button
-                        onClick={() => handlePrintBill(bill, gstPercent)}
+                        onClick={() => handlePrintBill(bill, gstPercent, config?.company)}
                         title="Print bill"
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-gray-600 border border-gray-300 hover:bg-gray-50"
                       >
@@ -207,7 +216,7 @@ export function BillsPage() {
                         Print
                       </button>
                       <button
-                        onClick={() => handleSaveBill(bill, gstPercent)}
+                        onClick={() => handleSaveBill(bill, gstPercent, config?.company)}
                         title="Save bill as file"
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-50"
                       >
@@ -245,7 +254,7 @@ export function BillsPage() {
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-3 text-center text-gray-500">No bills yet</td>
+                  <td colSpan={10} className="p-3 text-center text-gray-500">No bills yet</td>
                 </tr>
               )}
             </tbody>
@@ -273,8 +282,9 @@ export function BillsPage() {
           <BillDetail
             bill={viewing}
             gstPercent={gstPercent}
-            onPrint={() => handlePrintBill(viewing, gstPercent)}
-            onSave={() => handleSaveBill(viewing, gstPercent)}
+            company={config?.company}
+            onPrint={() => handlePrintBill(viewing, gstPercent, config?.company)}
+            onSave={() => handleSaveBill(viewing, gstPercent, config?.company)}
           />
         )}
       </Modal>

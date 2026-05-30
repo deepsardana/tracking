@@ -46,12 +46,15 @@ model Transaction {
 }
 
 model Bill {
-  id          String     @id @default(uuid())
-  customerId  String
-  customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  billDate    DateTime
-  deviceId    String     @db.VarChar(30)
-  vehicleId   String     @db.VarChar(30)
+  id           String     @id @default(uuid())
+  customerId   String
+  customer     Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  billDate     DateTime
+  invoiceNo    String     @db.VarChar(40)
+  vehicleId    String     @db.VarChar(30)
+  vltdSerialNo String     @db.VarChar(40)
+  vltdImeiNo   String     @db.VarChar(20)
+  deviceId     String     @db.VarChar(30)
   subtotal    Decimal    @db.Decimal(10, 2)
   gstAmount   Decimal    @db.Decimal(10, 2)
   totalAmount Decimal    @db.Decimal(10, 2)

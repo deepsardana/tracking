@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "npm run start:prod",
-    "start:prod": "prisma migrate deploy && node dist/index.js",
+    "start:prod": "sh scripts/start-prod.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy"
