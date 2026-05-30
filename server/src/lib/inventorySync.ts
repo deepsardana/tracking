@@ -99,8 +99,8 @@ export async function resolveInventoryDevices(
     return {
       inventoryDeviceId: ordered[0]?.id ?? null,
       inventoryDeviceIds: ordered.map((device) => device.id),
-      vltdSerialNo: ordered.map((device) => device.vltdSerialNo).join('\\n'),
-      vltdImeiNo: ordered.map((device) => device.imeiNo).join('\\n'),
+      vltdSerialNo: ordered.map((device) => device.vltdSerialNo).join('\n'),
+      vltdImeiNo: ordered.map((device) => device.imeiNo).join('\n'),
     };
   }
 

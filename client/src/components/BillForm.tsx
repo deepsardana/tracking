@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import { useCustomers } from '../api/customers';
@@ -48,6 +49,7 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
   const { data: customers } = useCustomers();
   const { data: config } = useBillConfig();
   const { data: availableDevices } = useAvailableDevices();
+  const [deviceToAdd, setDeviceToAdd] = useState('');
   const gstPercent = config?.gstPercent ?? 18;
   const initialDeviceIds = initialValues?.inventoryDeviceIds
     ?? (initialValues?.inventoryDeviceId ? [initialValues.inventoryDeviceId] : []);
@@ -101,11 +103,13 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
     ...(availableDevices ?? []),
   ].filter((device, index, list) => list.findIndex((d) => d.id === device.id) === index);
 
-  const handleDevicesSelect = (deviceIds: string[]) => {
+  const syncSelectedDevices = (deviceIds: string[]) => {
     const uniqueDeviceIds = [...new Set(deviceIds)];
     if (uniqueDeviceIds.length === 0) {
       setValue('inventoryDeviceId', null);
       setValue('inventoryDeviceIds', []);
+      setValue('vltdSerialNo', '');
+      setValue('vltdImeiNo', '');
       return;
     }
     const devices = uniqueDeviceIds
@@ -119,6 +123,21 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
       setValue('items.0.quantity', devices.length);
     }
   };
+
+  const addInventoryDevice = () => {
+    if (!deviceToAdd || selectedDeviceIds.includes(deviceToAdd)) return;
+    syncSelectedDevices([...selectedDeviceIds, deviceToAdd]);
+    setDeviceToAdd('');
+  };
+
+  const removeInventoryDevice = (deviceId: string) => {
+    syncSelectedDevices(selectedDeviceIds.filter((id) => id !== deviceId));
+  };
+
+  const selectedDevices = selectedDeviceIds
+    .map((id) => pickerDevices.find((device) => device.id === id))
+    .filter(Boolean) as DevicePickerOption[];
+  const devicesToChoose = pickerDevices.filter((device) => !selectedDeviceIds.includes(device.id));
 
   const syncLineFromIncl = (index: number, value: number) => {
     const incl = Number(value) || 0;
@@ -168,26 +187,58 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">Devices from inventory</label>
-          <select
-            multiple
-            value={selectedDeviceIds}
-            size={Math.min(10, Math.max(4, pickerDevices.length || 4))}
-            onChange={(e) => handleDevicesSelect(Array.from(e.target.selectedOptions, (option) => option.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
-          >
-            {pickerDevices.map((device) => (
-              <option key={device.id} value={device.id}>
-                {device.vltdSerialNo} · IMEI {device.imeiNo}
-                {device.deviceNo ? ` · ${device.deviceNo}` : ''}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={deviceToAdd}
+              onChange={(e) => setDeviceToAdd(e.target.value)}
+              className="min-w-0 flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+            >
+              <option value="">Select one device to add</option>
+              {devicesToChoose.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.vltdSerialNo} · IMEI {device.imeiNo}
+                  {device.deviceNo ? ` · ${device.deviceNo}` : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addInventoryDevice}
+              disabled={!deviceToAdd}
+              className="flex items-center gap-1 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+          {selectedDevices.length > 0 && (
+            <div className="mt-2 max-h-32 overflow-y-auto rounded border border-gray-200 bg-gray-50">
+              {selectedDevices.map((device, index) => (
+                <div key={device.id} className="flex items-center justify-between gap-2 border-t border-gray-200 px-3 py-2 first:border-t-0">
+                  <div className="min-w-0 font-mono text-xs">
+                    <span className="text-gray-500">{index + 1}.</span>{' '}
+                    <span>{device.vltdSerialNo}</span>
+                    <span className="text-gray-500"> · IMEI {device.imeiNo}</span>
+                    {device.deviceNo && <span className="text-gray-500"> · {device.deviceNo}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeInventoryDevice(device.id)}
+                    className="shrink-0 text-gray-400 hover:text-red-600"
+                    title="Remove device"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <p className="text-xs text-gray-500 mt-1">
-            {selectedDeviceIds.length} selected. Hold Ctrl/Cmd or Shift to select many, then save one bill for all selected devices.
+            {selectedDeviceIds.length} selected. Add devices one by one, then save one bill for all selected devices.
           </p>
           <button
             type="button"
-            onClick={() => handleDevicesSelect([])}
+            onClick={() => syncSelectedDevices([])}
             className="mt-2 text-xs text-gray-600 hover:text-red-600"
           >
             Clear selected devices

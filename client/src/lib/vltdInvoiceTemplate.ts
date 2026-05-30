@@ -306,8 +306,8 @@ export function renderVltdInvoiceHtml({
 }: VltdInvoiceData): string {
   const invoiceNo = bill.invoiceNo ?? 'HKT/042/26-27';
   const buyer = (bill.vehicleId ?? '').trim();
-  const serial = (bill.vltdSerialNo ?? '').trim();
-  const imei = (bill.vltdImeiNo ?? '').trim();
+  const serial = (bill.vltdSerialNo ?? '').replace(/\\n/g, '\n').trim();
+  const imei = (bill.vltdImeiNo ?? '').replace(/\\n/g, '\n').trim();
   const halfGst = gstPercent / 2;
   const taxable = Number(bill.subtotal);
   const cgst = Number(bill.gstAmount) / 2;

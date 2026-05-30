@@ -64,6 +64,10 @@ function handleSaveBill(bill: Bill, gstPercent: number, company?: BillCompany, h
   saveBill(bill, gstPercent, company, hsn);
 }
 
+function normalizeBillLines(value?: string) {
+  return value?.replace(/\\n/g, '\n') ?? '';
+}
+
 export function BillsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = {
@@ -113,8 +117,8 @@ export function BillsPage() {
     billDate: bill.billDate.slice(0, 10),
     invoiceNo: bill.invoiceNo ?? bill.vehicleId,
     vehicleId: bill.vehicleId,
-    vltdSerialNo: bill.vltdSerialNo ?? bill.deviceId,
-    vltdImeiNo: bill.vltdImeiNo ?? '',
+    vltdSerialNo: normalizeBillLines(bill.vltdSerialNo ?? bill.deviceId),
+    vltdImeiNo: normalizeBillLines(bill.vltdImeiNo),
     inventoryDeviceId: bill.inventoryDeviceId ?? bill.inventoryDevice?.id ?? null,
     inventoryDeviceIds: bill.inventoryDevices?.length
       ? bill.inventoryDevices.map((device) => device.id)
