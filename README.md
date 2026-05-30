@@ -1,6 +1,6 @@
-# DRG Power Admin
+# HK Trading Admin
 
-Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — device inventory (Excel import/export), customers, debit/credit transactions, and **VLTD tax invoices** synced with inventory.
+Internal app for **HK TRADING HOUSE**, Palwal — device inventory (Excel import/export), customers, transactions, and **VLTD tax invoices** (prefix **HKT**).
 
 ## Prerequisites
 
@@ -48,8 +48,8 @@ Internal app for **DRG POWER TECHNOLOGY PVT. LTD.** — device inventory (Excel 
 | `/customers/summary` | Customer-wise DR/CR/balance; click a name to filter transactions |
 | `/customers` | Customer CRUD (add/edit/delete) |
 | `/transactions` | Transaction CRUD with filters (customer, type, date range) |
-| `/inventory` | Device inventory — import/export Excel or TXT (Sunil DRG list), track Available vs Billed |
-| `/bills` | Tax invoices — pick device from inventory (auto serial/IMEI), print DRG bill |
+| `/inventory` | Device inventory — import/export Excel or TXT, track Available vs Billed |
+| `/bills` | Tax invoices — pick device from inventory, invoice prefix HKT (e.g. HKT/042/26-27) |
 
 ## Project Layout
 

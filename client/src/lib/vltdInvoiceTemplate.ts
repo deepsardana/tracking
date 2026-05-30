@@ -1,7 +1,7 @@
 import { Bill, BillCompany } from '../api/bills';
-import { DRG_BILL_COMPANY } from './company';
+import { HK_BILL_COMPANY } from './company';
 
-const DEFAULT_COMPANY: BillCompany = DRG_BILL_COMPANY;
+const DEFAULT_COMPANY: BillCompany = HK_BILL_COMPANY;
 
 const DEFAULT_HSN = '85269190';
 
@@ -169,6 +169,18 @@ function taxAmountInWords(gst: number): string {
   return `INR ${whole} and ${paise} paise Only`;
 }
 
+function companyExtraLines(company: BillCompany) {
+  const lines: string[] = [];
+  if (company.phone?.trim()) lines.push(`<div>${escapeHtml(company.phone)}</div>`);
+  lines.push(`<div>GSTIN/UIN: ${escapeHtml(company.gstin)}</div>`);
+  lines.push(
+    `<div>State Name : ${escapeHtml(company.stateName)}, Code : ${escapeHtml(company.stateCode)}</div>`,
+  );
+  if (company.cin?.trim()) lines.push(`<div>CIN: ${escapeHtml(company.cin)}</div>`);
+  if (company.email?.trim()) lines.push(`<div>E-Mail : ${escapeHtml(company.email)}</div>`);
+  return lines.join('\n      ');
+}
+
 function partyCell(title: string, buyer: string, stateName: string, stateCode: string) {
   return `
     <td width="50%">
@@ -261,7 +273,7 @@ export function renderVltdInvoiceHtml({
   company = DEFAULT_COMPANY,
   hsn = DEFAULT_HSN,
 }: VltdInvoiceData): string {
-  const invoiceNo = bill.invoiceNo ?? 'DRG/024/26-27';
+  const invoiceNo = bill.invoiceNo ?? 'HKT/042/26-27';
   const buyer = bill.vehicleId;
   const serial = bill.vltdSerialNo ?? bill.deviceId;
   const imei = bill.vltdImeiNo ?? '';
@@ -292,11 +304,7 @@ export function renderVltdInvoiceHtml({
       <div class="name">${escapeHtml(company.name)}</div>
       <div>${escapeHtml(company.addressLine1)}</div>
       <div>${escapeHtml(company.addressLine2)}</div>
-      <div>${escapeHtml(company.phone)}</div>
-      <div>GSTIN/UIN: ${escapeHtml(company.gstin)}</div>
-      <div>State Name : ${escapeHtml(company.stateName)}, Code : ${escapeHtml(company.stateCode)}</div>
-      <div>CIN: ${escapeHtml(company.cin)}</div>
-      <div>E-Mail : ${escapeHtml(company.email)}</div>
+      ${companyExtraLines(company)}
     </div>
 
     <table class="drg-party">
@@ -425,7 +433,7 @@ export function renderVltdInvoiceHtml({
     </table>
 
     <p class="drg-pan"><strong>Tax Amount (in words) :</strong> &nbsp; ${taxAmountInWords(totalTax)}</p>
-    <p class="drg-pan"><strong>Company&apos;s PAN :</strong> &nbsp; ${escapeHtml(company.pan)}</p>
+    <p class="drg-pan"><strong>Company&apos;s PAN :</strong> &nbsp; ${company.pan?.trim() ? escapeHtml(company.pan) : '—'}</p>
 
     <table class="drg-decl" style="width:100%;margin-top:4px">
       <tr>

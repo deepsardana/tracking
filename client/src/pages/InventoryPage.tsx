@@ -62,7 +62,7 @@ export function InventoryPage() {
             Device Inventory
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Upload your Sunil/DRG device list (.xlsx, .csv, or .txt). Bills pick serial &amp; IMEI from here automatically.
+            Upload device list (.xlsx, .csv, or .txt). Bills pick serial &amp; IMEI from here automatically.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -143,7 +143,7 @@ export function InventoryPage() {
             {devices.length === 0 ? (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-gray-500 text-sm">
-                  No devices yet. Import your Sunil DRG qty file (.txt or Excel) to get started.
+                  No devices yet. Import your device file (.txt or Excel) to get started.
                 </td>
               </tr>
             ) : (

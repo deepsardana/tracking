@@ -1,23 +1,28 @@
 import type { BillCompany } from '../api/bills';
 
-/** DRG Power — app shell + invoice (same details as HR73B5666.pdf / server BILL_COMPANY_* env). */
-export const DRG_APP = {
-  shortName: 'DRG Power',
-  legalName: 'DRG POWER TECHNOLOGY PVT. LTD. (2025-26)',
-  appTitle: 'DRG Power Admin',
+/** HK Trading — app shell + printed invoice (overridable via server BILL_COMPANY_* env on Railway). */
+export const HK_APP = {
+  shortName: 'HK Trading',
+  legalName: 'HK TRADING HOUSE',
+  appTitle: 'HK Trading Admin',
   tagline: 'Device inventory · Customers · Tax invoices',
-  location: 'Gurgaon, Haryana',
+  location: 'Palwal, Haryana',
 } as const;
 
-export const DRG_BILL_COMPANY: BillCompany = {
-  name: DRG_APP.legalName,
-  addressLine1: 'HNO-33R GROUND FLOOR NEW COLONY',
-  addressLine2: 'NEAR GURDWARA, GURGAON',
-  phone: 'TEL- 0124-4146966, MOB-9811133188',
-  gstin: '06AAICD8552H2ZF',
+export const HK_BILL_COMPANY: BillCompany = {
+  name: HK_APP.legalName,
+  addressLine1: 'No 418, Jawahar Nagar',
+  addressLine2: 'Palwal, Haryana',
+  phone: '',
+  gstin: '06BSRPS8447M3ZK',
   stateName: 'Haryana',
   stateCode: '06',
-  cin: 'U51909HR2021PTC098799',
-  email: 'DRGPOWER712@GMAIL.COM',
-  pan: 'AAICD8552H',
+  cin: '',
+  email: '',
+  pan: 'BSRPS8447M',
 };
+
+/** @deprecated use HK_APP */
+export const DRG_APP = HK_APP;
+/** @deprecated use HK_BILL_COMPANY */
+export const DRG_BILL_COMPANY = HK_BILL_COMPANY;

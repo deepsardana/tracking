@@ -14,7 +14,7 @@ export const DEFAULT_LINE_ITEM: BillLineFormValues = {
 };
 
 export const DEFAULT_VLTD_BILL: Partial<BillFormValues> = {
-  invoiceNo: 'DRG/024/26-27',
+  invoiceNo: 'HKT/042/26-27',
   vehicleId: 'HR73B5666',
   vltdSerialNo: 'DRG1T1A042600000091',
   vltdImeiNo: '865820071384080',
@@ -25,7 +25,7 @@ export function suggestInvoiceNo() {
   const d = new Date();
   const y = String(d.getFullYear()).slice(-2);
   const m = String(d.getMonth() + 1).padStart(2, '0');
-  return `DRG/${m}/${y}-27`;
+  return `HKT/${m}/${y}-27`;
 }
 
 export function newBillDefaults(): Partial<BillFormValues> {

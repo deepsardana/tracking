@@ -141,7 +141,7 @@ export function BillsPage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">
-        Select a device from inventory or enter serial/IMEI manually. GST {gstPercent}% fixed. Print matches your DRG Power bill.
+        Select a device from inventory or enter serial/IMEI manually. GST {gstPercent}% fixed. Print uses HK Trading bill header.
       </p>
 
       <div className="bg-white rounded shadow border border-gray-200 p-4 mb-4 grid grid-cols-3 gap-3">

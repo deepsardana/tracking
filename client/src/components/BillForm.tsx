@@ -5,7 +5,7 @@ import { useBillConfig } from '../api/bills';
 import { useAvailableDevices } from '../api/inventory';
 import { calculateBillTotals } from '../lib/billing';
 import { DEFAULT_LINE_ITEM, newBillDefaults } from '../lib/billTemplate';
-import { DRG_APP } from '../lib/company';
+import { HK_APP } from '../lib/company';
 
 export interface BillLineFormValues {
   description: string;
@@ -111,7 +111,7 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3 gap-2">
         <p className="text-sm text-blue-900">
-          {DRG_APP.shortName} tax invoice — same as your company bill. Edit line items below; change invoice no, vehicle, serial &amp; IMEI as needed.
+          {HK_APP.shortName} tax invoice. Edit line items below; change invoice no, vehicle, serial &amp; IMEI as needed.
         </p>
         <button type="button" onClick={applyDefaultTemplate} className="flex items-center gap-1 text-sm text-blue-700 font-medium shrink-0">
           <FileText size={14} />
@@ -131,7 +131,7 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Invoice No</label>
-          <input {...register('invoiceNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono" placeholder="DRG/024/26-27" />
+          <input {...register('invoiceNo', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2 font-mono" placeholder="HKT/042/26-27" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Dated</label>

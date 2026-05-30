@@ -94,7 +94,7 @@ router.get('/export', async (_req, res) => {
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="drg-device-inventory.xlsx"');
+  res.setHeader('Content-Disposition', 'attachment; filename="hk-device-inventory.xlsx"');
   res.send(buffer);
 });
 
