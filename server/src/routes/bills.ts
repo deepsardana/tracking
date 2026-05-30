@@ -94,9 +94,9 @@ function validateBillFields(
   vltdImeiNo: string,
 ) {
   if (invoiceNo.length > 40) return 'Invoice no exceeds max length';
-  if (vehicleId.length > 30) return 'Vehicle reg exceeds max length';
-  if (vltdSerialNo.length > 40) return 'VLTD serial exceeds max length';
-  if (vltdImeiNo.length > 20) return 'VLTD IMEI exceeds max length';
+  if (vehicleId.length > 500) return 'Vehicle reg list exceeds max length';
+  if (vltdSerialNo.length > 1000) return 'VLTD serial list exceeds max length';
+  if (vltdImeiNo.length > 1000) return 'VLTD IMEI list exceeds max length';
   return null;
 }
 

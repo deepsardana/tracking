@@ -112,6 +112,17 @@ function escapeHtml(text: string) {
     .replace(/"/g, '&quot;');
 }
 
+function splitLines(text: string) {
+  return text
+    .split(/\r?\n|,/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function escapeMultiline(text: string) {
+  return splitLines(text).map(escapeHtml).join('<br/>');
+}
+
 function formatBillDate(iso: string) {
   const d = new Date(iso);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -173,19 +184,13 @@ function companyExtraLines(company: BillCompany) {
   const lines: string[] = [];
   if (company.phone?.trim()) lines.push(`<div>${escapeHtml(company.phone)}</div>`);
   lines.push(`<div>GSTIN/UIN: ${escapeHtml(company.gstin)}</div>`);
-  lines.push(
-    `<div>State Name : ${escapeHtml(company.stateName)}, Code : ${escapeHtml(company.stateCode)}</div>`,
-  );
   if (company.cin?.trim()) lines.push(`<div>CIN: ${escapeHtml(company.cin)}</div>`);
   if (company.email?.trim()) lines.push(`<div>E-Mail : ${escapeHtml(company.email)}</div>`);
   return lines.join('\n      ');
 }
 
-function partyCell(title: string, buyer: string, stateName: string, stateCode: string) {
-  const buyerLine = buyer.trim()
-    ? `<span class="val">${escapeHtml(buyer)}</span><br/>
-      <span class="state">State Name &nbsp;: &nbsp;${escapeHtml(stateName)}, Code : ${escapeHtml(stateCode)}</span>`
-    : '&nbsp;';
+function partyCell(title: string, buyer: string) {
+  const buyerLine = buyer.trim() ? `<span class="val">${escapeMultiline(buyer)}</span>` : '&nbsp;';
   return `
     <td width="50%">
       <span class="lbl">${title}</span><br/>
@@ -195,17 +200,34 @@ function partyCell(title: string, buyer: string, stateName: string, stateCode: s
 
 function vltdSubRows(serial: string, imei: string) {
   const blocks: { label: string; value: string }[] = [];
-  if (serial.trim()) blocks.push({ label: 'VLTD Serial No:', value: serial.trim() });
-  if (imei.trim()) blocks.push({ label: 'VLTD IMEI No:', value: imei.trim() });
+  const serialLines = splitLines(serial);
+  const imeiLines = splitLines(imei);
+  const totalRows = Math.max(serialLines.length, imeiLines.length);
+
+  if (totalRows > 1) {
+    for (let i = 0; i < totalRows; i += 1) {
+      const parts: string[] = [];
+      if (serialLines[i]) parts.push(`<strong>VLTD Serial No:</strong> &nbsp; ${escapeHtml(serialLines[i])}`);
+      if (imeiLines[i]) parts.push(`<strong>VLTD IMEI No:</strong> &nbsp; ${escapeHtml(imeiLines[i])}`);
+      blocks.push({ label: '', value: parts.join(' &nbsp;&nbsp; ') });
+    }
+  } else {
+    if (serialLines[0]) blocks.push({ label: 'VLTD Serial No:', value: escapeHtml(serialLines[0]) });
+    if (imeiLines[0]) blocks.push({ label: 'VLTD IMEI No:', value: escapeHtml(imeiLines[0]) });
+  }
+
   if (blocks.length === 0) return '';
 
   return blocks
     .map((block, index) => {
       const last = index === blocks.length - 1;
+      const content = block.label
+        ? `<strong>${block.label}</strong> &nbsp; ${block.value}`
+        : block.value;
       return `
       <tr class="sub${last ? ' sub-last' : ''}">
         <td class="sl"></td>
-        <td class="desc" colspan="8"><strong>${block.label}</strong> &nbsp; ${escapeHtml(block.value)}</td>
+        <td class="desc" colspan="8">${content}</td>
       </tr>`;
     })
     .join('');
@@ -318,8 +340,8 @@ export function renderVltdInvoiceHtml({
 
     <table class="drg-party">
       <tr>
-        ${partyCell('Consignee (Ship to)', buyer, company.stateName, company.stateCode)}
-        ${partyCell('Buyer (Bill to)', buyer, company.stateName, company.stateCode)}
+        ${partyCell('Consignee (Ship to)', buyer)}
+        ${partyCell('Buyer (Bill to)', buyer)}
       </tr>
     </table>
 

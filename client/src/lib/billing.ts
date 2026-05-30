@@ -20,21 +20,22 @@ export function normalizeBillLine(item: BillLineDraft, gstPercent = FIXED_GST_PE
   let rateInclTax = Number(item.rateInclTax) || 0;
   const discPercent = Number(item.discPercent) || 0;
   const factor = 1 + gstPercent / 100;
+  const discountFactor = discPercent > 0 ? 1 - discPercent / 100 : 1;
+  let amount = 0;
+  let lineTotalIncl = 0;
 
-  // Inclusive rate is the primary price — derive taxable rate from it when set.
+  // Inclusive rate is the primary price, so totals stay exactly equal to price x quantity.
   if (rateInclTax > 0) {
     unitPrice = roundMoney(rateInclTax / factor);
+    lineTotalIncl = roundMoney(quantity * rateInclTax * discountFactor);
+    amount = roundMoney(lineTotalIncl / factor);
   } else if (unitPrice > 0) {
     rateInclTax = roundMoney(unitPrice * factor);
+    amount = roundMoney(quantity * unitPrice * discountFactor);
+    lineTotalIncl = roundMoney(amount * factor);
   }
 
-  let amount = roundMoney(quantity * unitPrice);
-  if (discPercent > 0) {
-    amount = roundMoney(amount * (1 - discPercent / 100));
-  }
-
-  const gstAmount = roundMoney(amount * (gstPercent / 100));
-  const lineTotalIncl = roundMoney(amount + gstAmount);
+  const gstAmount = roundMoney(lineTotalIncl - amount);
 
   return { ...item, quantity, unitPrice, rateInclTax, discPercent, amount, gstAmount, lineTotalIncl };
 }
@@ -42,7 +43,7 @@ export function normalizeBillLine(item: BillLineDraft, gstPercent = FIXED_GST_PE
 export function calculateBillTotals(items: BillLineDraft[], gstPercent = FIXED_GST_PERCENT) {
   const lines = items.map((row) => normalizeBillLine(row, gstPercent));
   const subtotal = roundMoney(lines.reduce((sum, row) => sum + row.amount, 0));
-  const gstAmount = roundMoney((subtotal * gstPercent) / 100);
-  const totalAmount = roundMoney(subtotal + gstAmount);
+  const totalAmount = roundMoney(lines.reduce((sum, row) => sum + row.lineTotalIncl, 0));
+  const gstAmount = roundMoney(totalAmount - subtotal);
   return { lines, subtotal, gstAmount, totalAmount };
 }

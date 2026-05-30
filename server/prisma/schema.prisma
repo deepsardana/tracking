@@ -56,9 +56,9 @@ model Bill {
   customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
   billDate          DateTime
   invoiceNo         String           @db.VarChar(40)
-  vehicleId         String           @db.VarChar(30)
-  vltdSerialNo      String           @db.VarChar(40)
-  vltdImeiNo        String           @db.VarChar(20)
+  vehicleId         String
+  vltdSerialNo      String
+  vltdImeiNo        String
   deviceId          String           @db.VarChar(30)
   inventoryDeviceId String?          @unique
   inventoryDevice   DeviceInventory? @relation(fields: [inventoryDeviceId], references: [id], onDelete: SetNull)

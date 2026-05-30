@@ -1,8 +1,8 @@
 /** Fixed GST rate (%) applied to bill subtotal — does not change per line item. */
 export const FIXED_GST_PERCENT = Number(process.env.GST_PERCENT ?? 18);
 
-export const DEFAULT_DEVICE_TAXABLE = 3813.56;
-export const DEFAULT_DEVICE_INCL = 4500;
+export const DEFAULT_DEVICE_TAXABLE = 0;
+export const DEFAULT_DEVICE_INCL = 0;
 
 export function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
@@ -24,16 +24,18 @@ export function normalizeBillItem(item: BillItemInput, gstPercent = FIXED_GST_PE
   let rateInclTax = Number(item.rateInclTax) || 0;
   const discPercent = Number(item.discPercent) || 0;
   const factor = 1 + gstPercent / 100;
+  const discountFactor = discPercent > 0 ? 1 - discPercent / 100 : 1;
+  let amount = 0;
+  let lineTotalIncl = 0;
 
   if (rateInclTax > 0) {
     unitPrice = roundMoney(rateInclTax / factor);
+    lineTotalIncl = roundMoney(quantity * rateInclTax * discountFactor);
+    amount = roundMoney(lineTotalIncl / factor);
   } else if (unitPrice > 0) {
     rateInclTax = roundMoney(unitPrice * factor);
-  }
-
-  let amount = roundMoney(quantity * unitPrice);
-  if (discPercent > 0) {
-    amount = roundMoney(amount * (1 - discPercent / 100));
+    amount = roundMoney(quantity * unitPrice * discountFactor);
+    lineTotalIncl = roundMoney(amount * factor);
   }
 
   return {
@@ -45,13 +47,14 @@ export function normalizeBillItem(item: BillItemInput, gstPercent = FIXED_GST_PE
     rateInclTax,
     discPercent,
     amount,
+    lineTotalIncl,
   };
 }
 
 export function calculateBillTotals(items: BillItemInput[], gstPercent = FIXED_GST_PERCENT) {
   const lineItems = items.map((item) => normalizeBillItem(item, gstPercent));
   const subtotal = roundMoney(lineItems.reduce((sum, row) => sum + row.amount, 0));
-  const gstAmount = roundMoney((subtotal * gstPercent) / 100);
-  const totalAmount = roundMoney(subtotal + gstAmount);
+  const totalAmount = roundMoney(lineItems.reduce((sum, row) => sum + row.lineTotalIncl, 0));
+  const gstAmount = roundMoney(totalAmount - subtotal);
   return { lineItems, subtotal, gstAmount, totalAmount };
 }

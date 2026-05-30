@@ -1,7 +1,7 @@
 import { BillFormValues, BillLineFormValues } from '../components/BillForm';
 
-export const DEFAULT_DEVICE_TAXABLE = 3813.56;
-export const DEFAULT_DEVICE_INCL = 4500;
+export const DEFAULT_DEVICE_TAXABLE = 0;
+export const DEFAULT_DEVICE_INCL = 0;
 
 export const DEFAULT_LINE_ITEM: BillLineFormValues = {
   description: 'AIS 140 DEVICE 2G',

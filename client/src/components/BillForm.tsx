@@ -127,7 +127,7 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-between items-center bg-blue-50 border border-blue-200 rounded p-3 gap-2">
         <p className="text-sm text-blue-900">
-          {HK_APP.shortName} tax invoice. Edit line items below; change invoice no, vehicle, serial &amp; IMEI as needed.
+          {HK_APP.shortName} tax invoice. Use one line per vehicle / serial / IMEI when billing multiple devices.
         </p>
         <button type="button" onClick={applyDefaultTemplate} className="flex items-center gap-1 text-sm text-blue-700 font-medium shrink-0">
           <FileText size={14} />
@@ -177,17 +177,17 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
           <label className="block text-sm font-medium text-gray-700">
             Consignee / Buyer (Vehicle Reg No on bill) <span className="text-gray-400 font-normal">(optional)</span>
           </label>
-          <input {...register('vehicleId')} className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase" placeholder="e.g. HR73B5666 — leave blank to skip" />
-          <p className="text-xs text-gray-500 mt-1">If filled, shows on bill with State Haryana, Code : 06</p>
+          <textarea {...register('vehicleId')} rows={2} className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase" placeholder="e.g. HR73B5666&#10;HR73B5667 — leave blank to skip" />
+          <p className="text-xs text-gray-500 mt-1">One vehicle per line for multiple quantity bills.</p>
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">VLTD Serial No <span className="text-gray-400 font-normal">(optional)</span></label>
-          <input {...register('vltdSerialNo')} placeholder="Leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
+          <textarea {...register('vltdSerialNo')} rows={2} placeholder="One serial per line; leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">VLTD IMEI No <span className="text-gray-400 font-normal">(optional)</span></label>
-          <input {...register('vltdImeiNo')} placeholder="Leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
-          <p className="text-xs text-gray-500 mt-1">Pick from inventory to auto-fill, or leave empty — bill prints without serial/IMEI lines.</p>
+          <textarea {...register('vltdImeiNo')} rows={2} placeholder="One IMEI per line; leave blank to skip on printed bill" className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm" />
+          <p className="text-xs text-gray-500 mt-1">Pick from inventory to auto-fill one device, or enter multiple lines manually.</p>
         </div>
       </div>
 
@@ -207,8 +207,8 @@ export function BillForm({ initialValues, onSubmit, submitLabel = 'Save Bill' }:
                 <th className="p-2 text-left min-w-[140px]">Description of Goods</th>
                 <th className="p-2 w-24">HSN/SAC</th>
                 <th className="p-2 w-14">Qty</th>
-                <th className="p-2 w-24">Rate (Incl. Tax)</th>
-                <th className="p-2 w-24">Rate</th>
+                <th className="p-2 w-24">Final Price<br/>(Incl. GST)</th>
+                <th className="p-2 w-24">Taxable Rate</th>
                 <th className="p-2 w-14">per</th>
                 <th className="p-2 w-14">Disc %</th>
                 <th className="p-2 w-24">Amount</th>
