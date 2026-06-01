@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { Plus, Trash2, FileText } from 'lucide-react';
+import { Plus, Trash2, FileText, ChevronDown, Search } from 'lucide-react';
 import { useCustomers } from '../api/customers';
 import { useBillConfig } from '../api/bills';
 import { useAvailableDevices } from '../api/inventory';
@@ -49,7 +49,20 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
   const { data: customers } = useCustomers();
   const { data: config } = useBillConfig();
   const { data: availableDevices } = useAvailableDevices();
-  const [deviceToAdd, setDeviceToAdd] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [deviceSearch, setDeviceSearch] = useState('');
+  const [stagedIds, setStagedIds] = useState<string[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const gstPercent = config?.gstPercent ?? 18;
   const initialDeviceIds = initialValues?.inventoryDeviceIds
     ?? (initialValues?.inventoryDeviceId ? [initialValues.inventoryDeviceId] : []);
@@ -124,20 +137,33 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
     }
   };
 
-  const addInventoryDevice = () => {
-    if (!deviceToAdd || selectedDeviceIds.includes(deviceToAdd)) return;
-    syncSelectedDevices([...selectedDeviceIds, deviceToAdd]);
-    setDeviceToAdd('');
-  };
-
-  const removeInventoryDevice = (deviceId: string) => {
-    syncSelectedDevices(selectedDeviceIds.filter((id) => id !== deviceId));
-  };
-
   const selectedDevices = selectedDeviceIds
     .map((id) => pickerDevices.find((device) => device.id === id))
     .filter(Boolean) as DevicePickerOption[];
   const devicesToChoose = pickerDevices.filter((device) => !selectedDeviceIds.includes(device.id));
+
+  const addStagedDevices = () => {
+    if (stagedIds.length === 0) return;
+    const newIds = stagedIds.filter((id) => !selectedDeviceIds.includes(id));
+    syncSelectedDevices([...selectedDeviceIds, ...newIds]);
+    setStagedIds([]);
+    setDropdownOpen(false);
+    setDeviceSearch('');
+  };
+
+  const filteredDevices = devicesToChoose.filter((device) => {
+    const q = deviceSearch.toLowerCase();
+    return (
+      !q ||
+      device.vltdSerialNo.toLowerCase().includes(q) ||
+      device.imeiNo.toLowerCase().includes(q) ||
+      (device.deviceNo ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  const removeInventoryDevice = (deviceId: string) => {
+    syncSelectedDevices(selectedDeviceIds.filter((id) => id !== deviceId));
+  };
 
   const syncLineFromIncl = (index: number, value: number) => {
     const incl = Number(value) || 0;
@@ -187,29 +213,76 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">Devices from inventory</label>
-          <div className="flex gap-2">
-            <select
-              value={deviceToAdd}
-              onChange={(e) => setDeviceToAdd(e.target.value)}
-              className="min-w-0 flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm"
-            >
-              <option value="">Select one device to add</option>
-              {devicesToChoose.map((device) => (
-                <option key={device.id} value={device.id}>
-                  {device.vltdSerialNo} · IMEI {device.imeiNo}
-                  {device.deviceNo ? ` · ${device.deviceNo}` : ''}
-                </option>
-              ))}
-            </select>
+          <div className="relative" ref={dropdownRef}>
             <button
               type="button"
-              onClick={addInventoryDevice}
-              disabled={!deviceToAdd}
-              className="flex items-center gap-1 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="w-full flex items-center justify-between border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:bg-gray-50 text-left"
             >
-              <Plus size={14} />
-              Add
+              <span className={stagedIds.length > 0 ? 'text-gray-800' : 'text-gray-400'}>
+                {stagedIds.length > 0
+                  ? `${stagedIds.length} device${stagedIds.length > 1 ? 's' : ''} staged — click to add more or confirm`
+                  : 'Search and select devices…'}
+              </span>
+              <ChevronDown size={14} className="text-gray-400 shrink-0" />
             </button>
+
+            {dropdownOpen && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
+                <div className="p-2 border-b border-gray-200 flex items-center gap-2">
+                  <Search size={14} className="text-gray-400 shrink-0" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={deviceSearch}
+                    onChange={(e) => setDeviceSearch(e.target.value)}
+                    placeholder="Search by serial, IMEI, device no…"
+                    className="flex-1 text-sm outline-none"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto">
+                  {filteredDevices.length === 0 ? (
+                    <p className="text-sm text-gray-500 p-3 text-center">No devices found</p>
+                  ) : (
+                    filteredDevices.map((device) => (
+                      <label
+                        key={device.id}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-t border-gray-100 first:border-t-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={stagedIds.includes(device.id)}
+                          onChange={(e) =>
+                            setStagedIds((prev) =>
+                              e.target.checked
+                                ? [...prev, device.id]
+                                : prev.filter((id) => id !== device.id),
+                            )
+                          }
+                          className="rounded"
+                        />
+                        <span className="font-mono text-xs">
+                          {device.vltdSerialNo}
+                          <span className="text-gray-500"> · {device.imeiNo}</span>
+                          {device.deviceNo && <span className="text-gray-500"> · {device.deviceNo}</span>}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {stagedIds.length > 0 && (
+                  <div className="p-2 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={addStagedDevices}
+                      className="w-full bg-blue-600 text-white rounded py-1.5 text-sm font-medium hover:bg-blue-700"
+                    >
+                      Add {stagedIds.length} device{stagedIds.length > 1 ? 's' : ''}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {selectedDevices.length > 0 && (
             <div className="mt-2 max-h-32 overflow-y-auto rounded border border-gray-200 bg-gray-50">

@@ -6,6 +6,8 @@ export interface DashboardSummary {
   totalDR: number;
   totalCR: number;
   netBalance: number;
+  availableDevices: number;
+  soldDevices: number;
 }
 
 export function useDashboardSummary() {

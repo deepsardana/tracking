@@ -14,18 +14,23 @@ export const DEFAULT_LINE_ITEM: BillLineFormValues = {
 };
 
 export const DEFAULT_VLTD_BILL: Partial<BillFormValues> = {
-  invoiceNo: 'HKT/042/26-27',
+  invoiceNo: 'HKT/26-27/0001',
   vehicleId: '',
   vltdSerialNo: '',
   vltdImeiNo: '',
   items: [{ ...DEFAULT_LINE_ITEM }],
 };
 
+function currentFinancialYear(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const fyStart = month >= 4 ? year : year - 1;
+  return `${String(fyStart).slice(-2)}-${String(fyStart + 1).slice(-2)}`;
+}
+
 export function suggestInvoiceNo() {
-  const d = new Date();
-  const y = String(d.getFullYear()).slice(-2);
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  return `HKT/${m}/${y}-27`;
+  return `HKT/${currentFinancialYear()}/0001`;
 }
 
 export function newBillDefaults(): Partial<BillFormValues> {

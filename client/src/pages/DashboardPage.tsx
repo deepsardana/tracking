@@ -22,11 +22,13 @@ export function DashboardPage() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <StatCard label="Total Customers" value={summary.customerCount} color="blue" />
         <StatCard label="Total DR" value={summary.totalDR.toFixed(2)} color="red" />
         <StatCard label="Total CR" value={summary.totalCR.toFixed(2)} color="green" />
         <StatCard label="Net Balance" value={summary.netBalance.toFixed(2)} color={summary.netBalance >= 0 ? 'red' : 'green'} />
+        <StatCard label="Available Devices" value={summary.availableDevices} color="blue" />
+        <StatCard label="Sold Devices" value={summary.soldDevices} color="default" />
       </div>
 
       <div className="grid grid-cols-3 gap-6 items-start">

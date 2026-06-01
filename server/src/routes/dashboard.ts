@@ -4,9 +4,11 @@ import { prisma } from '../db';
 const router = Router();
 
 router.get('/summary', async (_req, res) => {
-  const [customerCount, transactions] = await Promise.all([
+  const [customerCount, transactions, availableDevices, soldDevices] = await Promise.all([
     prisma.customer.count(),
     prisma.transaction.findMany({ select: { type: true, amount: true } }),
+    prisma.deviceInventory.count({ where: { status: 'AVAILABLE' } }),
+    prisma.deviceInventory.count({ where: { status: 'BILLED' } }),
   ]);
 
   const totalDR = transactions
@@ -21,6 +23,8 @@ router.get('/summary', async (_req, res) => {
     totalDR,
     totalCR,
     netBalance: totalDR - totalCR,
+    availableDevices,
+    soldDevices,
   });
 });
 

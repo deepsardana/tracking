@@ -11,14 +11,14 @@ import { assignDevicesToBill, releaseBillDevices, resolveInventoryDevices } from
 
 const router = Router();
 
-router.get('/config', (_req, res) => {
+router.get('/config', async (_req, res) => {
   res.json({
     gstPercent: FIXED_GST_PERCENT,
     company: BILL_COMPANY,
     defaultHsn: DEFAULT_HSN,
     defaultBill: {
       ...DEFAULT_VLTD_BILL,
-      invoiceNo: suggestInvoiceNo(),
+      invoiceNo: await suggestInvoiceNo(),
     },
   });
 });
