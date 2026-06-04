@@ -279,7 +279,7 @@ export function BillsPage() {
       )}
 
       <Modal open={createOpen} title="Create Bill" onClose={() => setCreateOpen(false)} wide>
-        <BillForm onSubmit={handleCreate} submitLabel="Create Bill" />
+        <BillForm onSubmit={handleCreate} submitLabel="Create Bill" existingBills={data ?? []} />
       </Modal>
 
       <Modal open={!!editing} title="Edit Bill" onClose={() => setEditing(null)} wide>

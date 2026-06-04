@@ -1,3 +1,4 @@
+import { Bill } from '../api/bills';
 import { BillFormValues, BillLineFormValues } from '../components/BillForm';
 
 export const DEFAULT_DEVICE_TAXABLE = 0;
@@ -33,10 +34,23 @@ export function suggestInvoiceNo() {
   return `HKT/${currentFinancialYear()}/0001`;
 }
 
-export function newBillDefaults(): Partial<BillFormValues> {
+export function nextInvoiceNo(bills: Bill[]): string {
+  const fy = currentFinancialYear();
+  const prefix = `HKT/${fy}/`;
+  let max = 0;
+  for (const bill of bills) {
+    if (bill.invoiceNo?.startsWith(prefix)) {
+      const seq = parseInt(bill.invoiceNo.slice(prefix.length), 10);
+      if (!isNaN(seq) && seq > max) max = seq;
+    }
+  }
+  return `${prefix}${String(max + 1).padStart(4, '0')}`;
+}
+
+export function newBillDefaults(bills?: Bill[]): Partial<BillFormValues> {
   return {
     ...DEFAULT_VLTD_BILL,
-    invoiceNo: suggestInvoiceNo(),
+    invoiceNo: bills ? nextInvoiceNo(bills) : suggestInvoiceNo(),
     billDate: new Date().toISOString().slice(0, 10),
     items: [{ ...DEFAULT_LINE_ITEM }],
   };

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Plus, Trash2, FileText, ChevronDown, Search } from 'lucide-react';
 import { useCustomers } from '../api/customers';
-import { useBillConfig } from '../api/bills';
+import { useBillConfig, Bill } from '../api/bills';
 import { useAvailableDevices } from '../api/inventory';
 import { calculateBillTotals, roundMoney } from '../lib/billing';
 import { DEFAULT_LINE_ITEM, newBillDefaults } from '../lib/billTemplate';
@@ -41,11 +41,12 @@ interface DevicePickerOption {
 interface BillFormProps {
   initialValues?: Partial<BillFormValues>;
   initialInventoryDevices?: DevicePickerOption[];
+  existingBills?: Bill[];
   onSubmit: (values: BillFormValues) => Promise<void> | void;
   submitLabel?: string;
 }
 
-export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
+export function BillForm({ initialValues, initialInventoryDevices = [], existingBills, onSubmit, submitLabel = 'Save Bill' }: BillFormProps) {
   const { data: customers } = useCustomers();
   const { data: config } = useBillConfig();
   const { data: availableDevices } = useAvailableDevices();
@@ -73,7 +74,7 @@ export function BillForm({ initialValues, initialInventoryDevices = [], onSubmit
       billDate: new Date().toISOString().slice(0, 10),
       notes: '',
       inventoryDeviceId: null,
-      ...newBillDefaults(),
+      ...newBillDefaults(existingBills),
       ...initialValues,
       inventoryDeviceIds: initialDeviceIds,
     },

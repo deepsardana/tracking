@@ -305,7 +305,9 @@ export function renderVltdInvoiceHtml({
   hsn = DEFAULT_HSN,
 }: VltdInvoiceData): string {
   const invoiceNo = bill.invoiceNo ?? 'HKT/042/26-27';
-  const buyer = (bill.vehicleId ?? '').trim();
+  const buyerName = bill.customer?.name?.trim() ?? '';
+  const vehicleId = (bill.vehicleId ?? '').trim();
+  const buyer = [buyerName, vehicleId].filter(Boolean).join('\n');
   const serial = (bill.vltdSerialNo ?? '').replace(/\\n/g, '\n').trim();
   const imei = (bill.vltdImeiNo ?? '').replace(/\\n/g, '\n').trim();
   const halfGst = gstPercent / 2;
@@ -315,8 +317,6 @@ export function renderVltdInvoiceHtml({
   const totalTax = Number(bill.gstAmount);
   const grandTotal = Number(bill.totalAmount);
   const summaryHsn = bill.items[0]?.hsn || hsn;
-  const totalQty = bill.items.reduce((sum, row) => sum + Number(row.quantity), 0);
-  const qtyLabel = totalQty === 1 ? '1 PCS' : `${totalQty} PCS`;
   const dated = formatBillDate(bill.billDate);
   const itemRows = renderItemRows(bill, serial, imei, hsn, gstPercent);
 
@@ -408,9 +408,7 @@ export function renderVltdInvoiceHtml({
         <tr class="total-row">
           <td colspan="2" class="desc" style="text-align:right"><strong>Total</strong></td>
           <td class="num"><strong>₹ ${money(grandTotal)}</strong></td>
-          <td colspan="5">&nbsp;</td>
-          <td class="ctr"><strong>${qtyLabel}</strong></td>
-          <td>&nbsp;</td>
+          <td colspan="6">&nbsp;</td>
         </tr>
       </tbody>
     </table>
