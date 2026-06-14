@@ -74,6 +74,7 @@ function parseBillBody(body: Record<string, unknown>) {
     : inventoryDeviceId
       ? [inventoryDeviceId]
       : [];
+  const customerGst = ((body.customerGst as string) ?? '').trim() || null;
   const notes = body.notes as string | undefined;
   const items = body.items;
   return {
@@ -85,6 +86,7 @@ function parseBillBody(body: Record<string, unknown>) {
     vltdImeiNo,
     inventoryDeviceId: inventoryDeviceId || null,
     inventoryDeviceIds,
+    customerGst,
     notes,
     items,
   };
@@ -118,6 +120,7 @@ router.post('/', async (req, res) => {
     vltdImeiNo,
     inventoryDeviceId,
     inventoryDeviceIds,
+    customerGst,
     notes,
     items,
   } = parseBillBody(req.body);
@@ -158,6 +161,7 @@ router.post('/', async (req, res) => {
           subtotal,
           gstAmount,
           totalAmount,
+          customerGst,
           notes: notes?.trim() || null,
           items: {
             create: lineItems.map((row) => ({
@@ -200,6 +204,7 @@ router.put('/:id', async (req, res) => {
     vltdImeiNo,
     inventoryDeviceId,
     inventoryDeviceIds,
+    customerGst,
     notes,
     items,
   } = parseBillBody(req.body);
@@ -248,6 +253,7 @@ router.put('/:id', async (req, res) => {
           subtotal,
           gstAmount,
           totalAmount,
+          customerGst,
           notes: notes?.trim() || null,
           items: {
             create: lineItems.map((row) => ({

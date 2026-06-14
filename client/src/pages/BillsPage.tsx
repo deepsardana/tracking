@@ -125,6 +125,7 @@ export function BillsPage() {
       : bill.inventoryDeviceId || bill.inventoryDevice?.id
         ? [bill.inventoryDeviceId ?? bill.inventoryDevice!.id]
         : [],
+    customerGst: bill.customerGst ?? '',
     notes: bill.notes ?? '',
     items: bill.items.map((item) => ({
       description: item.description,

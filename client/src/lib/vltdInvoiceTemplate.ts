@@ -189,12 +189,13 @@ function companyExtraLines(company: BillCompany) {
   return lines.join('\n      ');
 }
 
-function partyCell(title: string, buyer: string) {
+function partyCell(title: string, buyer: string, gstin?: string | null) {
   const buyerLine = buyer.trim() ? `<span class="val">${escapeMultiline(buyer)}</span>` : '&nbsp;';
+  const gstLine = gstin?.trim() ? `<br/><span class="lbl">GSTIN/UIN:</span> <span class="val">${escapeHtml(gstin.trim().toUpperCase())}</span>` : '';
   return `
     <td width="50%">
       <span class="lbl">${title}</span><br/>
-      ${buyerLine}
+      ${buyerLine}${gstLine}
     </td>`;
 }
 
@@ -308,6 +309,7 @@ export function renderVltdInvoiceHtml({
   const buyerName = bill.customer?.name?.trim() ?? '';
   const vehicleId = (bill.vehicleId ?? '').trim();
   const buyer = [buyerName, vehicleId].filter(Boolean).join('\n');
+  const customerGst = bill.customerGst?.trim() || null;
   const serial = (bill.vltdSerialNo ?? '').replace(/\\n/g, '\n').trim();
   const imei = (bill.vltdImeiNo ?? '').replace(/\\n/g, '\n').trim();
   const halfGst = gstPercent / 2;
@@ -340,8 +342,8 @@ export function renderVltdInvoiceHtml({
 
     <table class="drg-party">
       <tr>
-        ${partyCell('Consignee (Ship to)', buyer)}
-        ${partyCell('Buyer (Bill to)', buyer)}
+        ${partyCell('Consignee (Ship to)', buyer, customerGst)}
+        ${partyCell('Buyer (Bill to)', buyer, customerGst)}
       </tr>
     </table>
 

@@ -40,6 +40,7 @@ export interface Bill {
   subtotal: string;
   gstAmount: string;
   totalAmount: string;
+  customerGst: string | null;
   notes: string | null;
   inventoryDevice?: { id: string; vltdSerialNo: string; imeiNo: string; deviceNo: string | null } | null;
   inventoryDevices?: { id: string; vltdSerialNo: string; imeiNo: string; deviceNo: string | null }[];
@@ -73,6 +74,7 @@ export interface BillInput {
   vltdImeiNo?: string;
   inventoryDeviceId?: string | null;
   inventoryDeviceIds?: string[];
+  customerGst?: string | null;
   notes?: string;
   items: BillItemInput[];
 }

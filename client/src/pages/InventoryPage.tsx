@@ -102,13 +102,13 @@ export function InventoryPage() {
 
       <div className="bg-white rounded shadow border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Search serial / IMEI / device no</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Search serial / device no / vehicle no</label>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="DRG1T1A..."
+              placeholder="HKT000001..."
               className="w-full border border-gray-300 rounded pl-9 pr-3 py-2 text-sm font-mono"
             />
           </div>

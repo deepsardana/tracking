@@ -66,6 +66,7 @@ model Bill {
   subtotal          Decimal           @db.Decimal(10, 2)
   gstAmount         Decimal          @db.Decimal(10, 2)
   totalAmount       Decimal          @db.Decimal(10, 2)
+  customerGst       String?
   notes             String?
   items             BillItem[]
   createdAt         DateTime         @default(now())

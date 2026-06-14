@@ -46,6 +46,7 @@ export function useInventory(filters: InventoryFilters = {}) {
       const { data } = await api.get<InventoryDevice[]>('/inventory', { params: filters });
       return data;
     },
+    placeholderData: (prev) => prev,
   });
 }
 

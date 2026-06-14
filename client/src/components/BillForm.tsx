@@ -27,6 +27,7 @@ export interface BillFormValues {
   vltdImeiNo: string;
   inventoryDeviceId?: string | null;
   inventoryDeviceIds?: string[];
+  customerGst?: string | null;
   notes?: string;
   items: BillLineFormValues[];
 }
@@ -72,6 +73,7 @@ export function BillForm({ initialValues, initialInventoryDevices = [], existing
     defaultValues: {
       customerId: '',
       billDate: new Date().toISOString().slice(0, 10),
+      customerGst: '',
       notes: '',
       inventoryDeviceId: null,
       ...newBillDefaults(existingBills),
@@ -157,7 +159,6 @@ export function BillForm({ initialValues, initialInventoryDevices = [], existing
     return (
       !q ||
       device.vltdSerialNo.toLowerCase().includes(q) ||
-      device.imeiNo.toLowerCase().includes(q) ||
       (device.deviceNo ?? '').toLowerCase().includes(q)
     );
   });
@@ -195,7 +196,7 @@ export function BillForm({ initialValues, initialInventoryDevices = [], existing
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700">Customer (records only)</label>
           <select {...register('customerId', { required: true })} className="w-full border border-gray-300 rounded px-3 py-2">
             <option value="">Select customer</option>
@@ -203,6 +204,17 @@ export function BillForm({ initialValues, initialInventoryDevices = [], existing
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Customer GSTIN <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            {...register('customerGst')}
+            className="w-full border border-gray-300 rounded px-3 py-2 font-mono uppercase"
+            placeholder="e.g. 06AABCU9603R1ZX"
+            maxLength={15}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Invoice No</label>

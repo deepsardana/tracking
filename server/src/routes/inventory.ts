@@ -132,8 +132,9 @@ router.get('/', async (req, res) => {
     const term = String(q).trim();
     where.OR = [
       { vltdSerialNo: { contains: term, mode: 'insensitive' } },
-      { imeiNo: { contains: term } },
       { deviceNo: { contains: term, mode: 'insensitive' } },
+      { bill: { vehicleId: { contains: term, mode: 'insensitive' } } },
+      { billedBill: { vehicleId: { contains: term, mode: 'insensitive' } } },
     ];
   }
 
